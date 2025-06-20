@@ -1,4 +1,9 @@
+import  Button  from "../components/Button";
+import {useNavigate} from "react-router-dom";
+
+
 const Landing = () => {
+    const nvaigate = useNavigate();
   return (
     <div className='min-h-screen bg-neutral-800'>
       <div id='navbar' className='flex  '>
@@ -21,25 +26,9 @@ const Landing = () => {
               <span className='block'>Play Chess Online</span>
               <span className='block mt-2'>On the #1 Site</span>
             </h1>
-            <button className='bg-lime-500 rounded-2xl hover:bg-lime-600 transition-colors w-full md:w-auto md:pr-2 max-w-md'>
-              <div className='flex items-center gap-4 p-4'>
-                <div className='w-12'>
-                  <img
-                    src='https://www.chess.com/bundles/web/images/color-icons/playwhite.cea685ba.svg'
-                    alt='Play Icon'
-                    className='w-full h-auto'
-                  />
-                </div>
-                <div>
-                  <h2 className='text-2xl md:text-3xl font-bold pr-1'>
-                    Play Online
-                  </h2>
-                  <p className='text-sm md:text-base opacity-90 pt-1'>
-                    Play with someone
-                  </p>
-                </div>
-              </div>
-            </button>
+           <Button onClick={()=> nvaigate("/game")}> 
+            Play Online
+             </Button>
           </div>
         </div>
       </div>

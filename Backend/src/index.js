@@ -18,7 +18,7 @@ wss.on("listening", () => {
 wss.on("connection", function connection(ws) {
   gameManger.addUser(ws);
 
-  wss.on("close", (ws) => {
+  ws.on("close", (ws) => {
     gameManger.removeUser(ws);
   });
 });
