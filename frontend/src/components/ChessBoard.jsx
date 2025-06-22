@@ -3,7 +3,6 @@ import { MOVE } from "../screens/Game";
 
 const ChessBoard = ({ board, socket, chess, setBoard }) => {
   const [from, setFrom] = useState(null);
-  const [to, setTo] = useState(null);
 
   return (
     <div className='w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl mx-auto p-2'>
@@ -24,21 +23,12 @@ const ChessBoard = ({ board, socket, chess, setBoard }) => {
                         JSON.stringify({
                           type: MOVE,
                           payload: {
-                            move: {
                               from,
                               to: squareRepresentation,
-                            },
-                          },
+                          }, 
                         })
                       );
                     setFrom(null);
-                    chess.move({
-                      from: from,
-                      to: squareRepresentation,
-                    });
-                    setBoard(chess.board());
-                    
-                    console.log({ from, to });
                     }
                   }}
                   key={j}

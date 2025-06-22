@@ -41,7 +41,7 @@ export class GameManager {
         );
 
         if (game) {
-          game.makeMove(socket,message.payload.move);
+          game.makeMove(socket,message.payload);
         } else {
           console.log("No game found for this socket");
         }
