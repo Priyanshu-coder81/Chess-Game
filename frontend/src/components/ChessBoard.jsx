@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { MOVE } from "../screens/Game";
 
-const ChessBoard = ({ board, socket, chess, setBoard }) => {
+const ChessBoard = ({ board, socket }) => {
   const [from, setFrom] = useState(null);
 
   return (
@@ -23,12 +23,12 @@ const ChessBoard = ({ board, socket, chess, setBoard }) => {
                         JSON.stringify({
                           type: MOVE,
                           payload: {
-                              from,
-                              to: squareRepresentation,
-                          }, 
+                            from,
+                            to: squareRepresentation,
+                          },
                         })
                       );
-                    setFrom(null);
+                      setFrom(null);
                     }
                   }}
                   key={j}
@@ -41,7 +41,16 @@ const ChessBoard = ({ board, socket, chess, setBoard }) => {
                 `}
                   style={{ minWidth: 0 }}
                 >
-                  {square ? square.type : ""}
+                  {square ? (
+                    <img
+                      className='w-15'
+                      src={`/${
+                        square?.color === "b"
+                          ? `b${square?.type}`
+                          : `w${square?.type?.toLowerCase()}`
+                      }.png`}
+                    />
+                  ) : null}
                 </div>
               );
             })}
