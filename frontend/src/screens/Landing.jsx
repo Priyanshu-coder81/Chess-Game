@@ -28,6 +28,9 @@ const Landing = () => {
             </h1>
            <Button onClick={()=> nvaigate("/game")}> 
             Play Online
+            <p className='text-sm md:text-base opacity-90 pt-1'>
+                Play with someone
+              </p>
              </Button>
           </div>
         </div>

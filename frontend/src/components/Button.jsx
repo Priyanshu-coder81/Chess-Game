@@ -14,9 +14,7 @@ const Button = ({ children, onClick, className = "" }) => {
         </div>
         <div>
           <h2 className='text-2xl md:text-3xl font-bold pr-1'>{children}</h2>
-          <p className='text-sm md:text-base opacity-90 pt-1'>
-            Play with someone
-          </p>
+          
         </div>
       </div>
     </button>

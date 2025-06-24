@@ -15,10 +15,11 @@ const ChessBoard = ({ board, socket }) => {
               const squareRepresentation = `${file}${rank}`;
               return (
                 <div
-                  onClick={() => {
-                    if (!from) {
-                      setFrom(squareRepresentation);
-                    } else {
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                  }}
+                  onDrop={() => {
+                    if (from) {
                       socket.send(
                         JSON.stringify({
                           type: MOVE,
@@ -43,12 +44,16 @@ const ChessBoard = ({ board, socket }) => {
                 >
                   {square ? (
                     <img
-                      className='w-15'
+                      onDragStart={(e) => {
+                        setFrom(squareRepresentation);
+                      }}
+                      className='w-15 cursor-grab active:cursor-grabbing'
                       src={`/${
                         square?.color === "b"
                           ? `b${square?.type}`
                           : `w${square?.type?.toLowerCase()}`
                       }.png`}
+                      draggable='true'
                     />
                   ) : null}
                 </div>
