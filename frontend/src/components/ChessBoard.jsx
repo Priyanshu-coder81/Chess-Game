@@ -1,17 +1,28 @@
 import { useState } from "react";
-import { MOVE } from "../screens/Game";
+import { MOVE } from "../constant";
 
-const ChessBoard = ({ board, socket }) => {
+const ChessBoard = ({ board, socket, color }) => {
   const [from, setFrom] = useState(null);
 
   return (
     <div className='w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl mx-auto p-2'>
-      <div className='flex flex-col'>
+      <div
+        className={`flex flex-col ${
+          color === "black" ? "flex-col-reverse" : ""
+        }`}
+      >
         {board.map((row, i) => (
-          <div key={i} className='flex w-full'>
+          <div
+            key={i}
+            className={`flex w-full ${
+              color === "black" ? "flex-row-reverse" : ""
+            }`}
+          >
             {row.map((square, j) => {
+              // Calculate file and rank based on color
               const file = String.fromCharCode(97 + j); // "a" to "h"
               const rank = 8 - i; // 8 (top) to 1 (bottom)
+
               const squareRepresentation = `${file}${rank}`;
               return (
                 <div
@@ -44,7 +55,7 @@ const ChessBoard = ({ board, socket }) => {
                 >
                   {square ? (
                     <img
-                      onDragStart={(e) => {
+                      onDragStart={() => {
                         setFrom(squareRepresentation);
                       }}
                       className='w-15 cursor-grab active:cursor-grabbing'

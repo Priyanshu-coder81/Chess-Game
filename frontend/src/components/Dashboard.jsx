@@ -1,6 +1,6 @@
 import { RiTimerFlashLine } from "react-icons/ri";
 import { BsPlusSquareFill } from "react-icons/bs";
-export const Dashboard = () => {
+export const Dashboard = ({color}) => {
   return (
     <div className='bg-zinc-700 w-full h-full '>
       <div className=' w-full md:w-auto   '>
@@ -20,7 +20,9 @@ export const Dashboard = () => {
         </div>
         <hr />
         <div>
-          <h2 className='text-center text-white text-3xl'> Moves</h2>
+            <h2>
+                Your'e {color === "white"? "White!":"Black!"}
+            </h2>
         </div>
       </div>
     </div>

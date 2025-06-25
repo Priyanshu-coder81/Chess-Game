@@ -4,11 +4,9 @@ import { useSocket } from "../hooks/useSocket.js";
 import { useEffect, useRef, useState } from "react";
 import { Chess } from "chess.js";
 import { Dashboard } from "../components/Dashboard.jsx";
+import { GAME_OVER, INIT_GAME, MOVE } from "../constant.js";
 
-// make a single place for this
-export const INIT_GAME = "init_game";
-export const MOVE = "move";
-export const GAME_OVER = "game_over";
+
 
 const Game = () => {
   const socket = useSocket();
@@ -30,10 +28,10 @@ const Game = () => {
           setBoard(chessRef.current.board());
           setStarted(true);
           setColor(message.payload.color);
-          console.log(message.payload.color);
           console.log("Game Intialized");
           break;
         case GAME_OVER:
+          setStarted(false);
           console.log("Game End");
           break;
         case MOVE:
@@ -60,10 +58,9 @@ const Game = () => {
         <div className='flex flex-col w-full gap-8 md:grid md:grid-cols-6 md:gap-4'>
           <div className='flex justify-center items-center w-full md:col-span-4 mb-8 md:mb-0'>
             <ChessBoard
-              board={board}
-              chess={chessRef}
-              setBoard={setBoard}
               socket={socket}
+              color = {color}
+              board = {board}
             />
           </div>
 
@@ -76,7 +73,7 @@ const Game = () => {
                 Start Game
               </Button>
             ) : (
-              <Dashboard/>
+              <Dashboard color = {color}/>
             )}
           </div>
         </div>
