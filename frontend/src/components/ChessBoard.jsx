@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { MOVE } from "../constant";
+import { ProfileCard } from "./ProfileCard.jsx";
 
 const ChessBoard = ({ board, socket, color }) => {
   const [from, setFrom] = useState(null);
@@ -73,6 +74,7 @@ const ChessBoard = ({ board, socket, color }) => {
           </div>
         ))}
       </div>
+      <ProfileCard></ProfileCard>
     </div>
   );
 };

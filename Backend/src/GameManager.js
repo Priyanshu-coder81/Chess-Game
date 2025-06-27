@@ -1,5 +1,5 @@
 import { Game } from "./Game.js";
-import { INIT_GAME, MOVE } from "./message.js";
+import { CONNECTING, INIT_GAME, MOVE } from "./message.js";
 
 export class GameManager {
   constructor() {
@@ -31,6 +31,10 @@ export class GameManager {
           this.pendingUser = null;
         } else {
           this.pendingUser = socket;
+          socket.send(JSON.stringify({
+            type: CONNECTING,
+          }))
+          
         }
         return;
       }
@@ -42,9 +46,7 @@ export class GameManager {
 
         if (game) {
           game.makeMove(socket,message.payload);
-        } else {
-          console.log("No game found for this socket");
-        }
+        } 
       }
     });
   }

@@ -4,7 +4,7 @@ import { useSocket } from "../hooks/useSocket.js";
 import { useEffect, useRef, useState } from "react";
 import { Chess } from "chess.js";
 import { Dashboard } from "../components/Dashboard.jsx";
-import { GAME_OVER, INIT_GAME, MOVE } from "../constant.js";
+import { CONNECTING, GAME_OVER, INIT_GAME, MOVE } from "../constant.js";
 
 
 
@@ -14,6 +14,7 @@ const Game = () => {
   const [board, setBoard] = useState(chessRef.current.board());
   const [started, setStarted] = useState(false);
   const [color, setColor] = useState(null);
+  const [connect , setConnect] = useState(false);
 
   useEffect(() => {
     if (!socket) return;
@@ -24,7 +25,11 @@ const Game = () => {
       console.log("Received From Socket - ", message);
 
       switch (message.type) {
+        case CONNECTING:
+          setConnect(true);
+          break;
         case INIT_GAME:
+          setConnect(false);
           setBoard(chessRef.current.board());
           setStarted(true);
           setColor(message.payload.color);
@@ -32,6 +37,9 @@ const Game = () => {
           break;
         case GAME_OVER:
           setStarted(false);
+
+          
+
           console.log("Game End");
           break;
         case MOVE:
@@ -53,7 +61,9 @@ const Game = () => {
   }
 
   return (
-    <div className='min-h-screen bg-zinc-900 text-white flex justify-center items-center'>
+    <>
+    <div className={`min-h-screen bg-zinc-900 text-white flex justify-center items-center`}>
+ 
       <div className='pt-8 w-full max-w-5xl mx-auto'>
         <div className='flex flex-col w-full gap-8 md:grid md:grid-cols-6 md:gap-4'>
           <div className='flex justify-center items-center w-full md:col-span-4 mb-8 md:mb-0'>
@@ -79,6 +89,7 @@ const Game = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 
