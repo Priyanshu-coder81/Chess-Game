@@ -1,12 +1,37 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { MOVE } from "../constant";
 import { ProfileCard } from "./ProfileCard.jsx";
 
-const ChessBoard = ({ board, socket, color }) => {
+const ChessBoard = ({ board, socket, color, started, turn }) => {
   const [from, setFrom] = useState(null);
+  const [whiteTime, setWhiteTime] = useState(600);
+  const [blackTime, setBlackTime] = useState(600);
+
+  const timerRef = useRef(null);
+
+  useEffect(() => {
+    clearInterval(timerRef.current);
+
+    if(started) {
+     timerRef.current = setInterval(() => {
+      if (turn === "white") {
+        setWhiteTime((prev) => Math.max(prev - 1, 0));
+      } else if (turn === "black") {
+        setBlackTime((prev) => Math.max(prev - 1, 0));
+      }
+    }, 1000); 
+  }
+
+    return () => clearInterval(timerRef.current);
+  }, [turn,started]);
 
   return (
     <div className='w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl mx-auto p-2'>
+      {color === "black" ? (
+        <ProfileCard time={whiteTime} started={started} />
+      ) : (
+        <ProfileCard time={blackTime} started={started} />
+      )}
       <div
         className={`flex flex-col ${
           color === "black" ? "flex-col-reverse" : ""
@@ -74,7 +99,11 @@ const ChessBoard = ({ board, socket, color }) => {
           </div>
         ))}
       </div>
-      <ProfileCard></ProfileCard>
+      {color === "white" ? (
+        <ProfileCard time={whiteTime} started={started} />
+      ) : (
+        <ProfileCard time={blackTime} started={started} />
+      )}
     </div>
   );
 };

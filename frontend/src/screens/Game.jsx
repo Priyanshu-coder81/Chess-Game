@@ -6,15 +6,14 @@ import { Chess } from "chess.js";
 import { Dashboard } from "../components/Dashboard.jsx";
 import { CONNECTING, GAME_OVER, INIT_GAME, MOVE } from "../constant.js";
 
-
-
 const Game = () => {
   const socket = useSocket();
   const chessRef = useRef(new Chess());
   const [board, setBoard] = useState(chessRef.current.board());
   const [started, setStarted] = useState(false);
   const [color, setColor] = useState(null);
-  const [connect , setConnect] = useState(false);
+  const [connect, setConnect] = useState(false);
+  const [turn, setTurn] = useState("white");
 
   useEffect(() => {
     if (!socket) return;
@@ -33,12 +32,11 @@ const Game = () => {
           setBoard(chessRef.current.board());
           setStarted(true);
           setColor(message.payload.color);
+          setTurn("white");
           console.log("Game Intialized");
           break;
         case GAME_OVER:
           setStarted(false);
-
-          
 
           console.log("Game End");
           break;
@@ -51,6 +49,7 @@ const Game = () => {
           } else {
             console.warn("Invalid move recieved: ", move);
           }
+          setTurn(chessRef.current.turn() === "w" ? "white" : "black");
           break;
       }
     };
@@ -62,33 +61,38 @@ const Game = () => {
 
   return (
     <>
-    <div className={`min-h-screen bg-zinc-900 text-white flex justify-center items-center`}>
- 
-      <div className='pt-8 w-full max-w-5xl mx-auto'>
-        <div className='flex flex-col w-full gap-8 md:grid md:grid-cols-6 md:gap-4'>
-          <div className='flex justify-center items-center w-full md:col-span-4 mb-8 md:mb-0'>
-            <ChessBoard
-              socket={socket}
-              color = {color}
-              board = {board}
-            />
-          </div>
+      <div
+        className={`min-h-screen bg-zinc-900 text-white flex justify-center items-center`}
+      >
+        <div className='pt-8 w-full max-w-5xl mx-auto'>
+          <div className='flex flex-col w-full gap-8 md:grid md:grid-cols-6 md:gap-4'>
+            <div className='flex justify-center items-center w-full md:col-span-4 mb-8 md:mb-0'>
+              <ChessBoard
+                socket={socket}
+                color={color}
+                board={board}
+                started={started}
+                turn={turn}
+              />
+            </div>
 
-          <div className='flex justify-center items-center w-[95%] m-auto md:col-span-2'>
-            {!started ? (
-              <Button
-                onClick={() => socket.send(JSON.stringify({ type: INIT_GAME }))}
-                className='w-full md:w-auto min-w-3xs'
-              >
-                Start Game
-              </Button>
-            ) : (
-              <Dashboard color = {color}/>
-            )}
+            <div className='flex justify-center items-center w-[95%] m-auto md:col-span-2'>
+              {!started ? (
+                <Button
+                  onClick={() =>
+                    socket.send(JSON.stringify({ type: INIT_GAME }))
+                  }
+                  className='w-full md:w-auto min-w-3xs'
+                >
+                  Start Game
+                </Button>
+              ) : (
+                <Dashboard color={color} />
+              )}
+            </div>
           </div>
         </div>
       </div>
-    </div>
     </>
   );
 };
