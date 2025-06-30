@@ -1,3 +1,5 @@
+console.log("Game.js loaded");
+
 import { Chess } from "chess.js";
 import { GAME_OVER, INIT_GAME, MOVE } from "./message.js";
 
@@ -10,6 +12,11 @@ export class Game {
     this.playersColors = new Map();
     this.playersColors.set(player1, "w");
     this.playersColors.set(player2, "b");
+
+    this.currentTurnStartTime = new Date();
+    this.maxTimePerPlayer = 60000; // 1 min
+    this.whiteTimeUsed = 0;
+    this.blackTimeUsed = 0;
 
     this.player1.send(
       JSON.stringify({
@@ -47,12 +54,11 @@ export class Game {
 
     // this will validate automatically
     let result;
-   try {
+    try {
       result = this.board.move(move);
- 
-   } catch (error) {
-    console.log("Error occured while moving",error);
-   }
+    } catch (error) {
+      console.log("Error occured while moving", error);
+    }
     if (!result) {
       console.log("Illegal move attempted");
       socket.send(
@@ -64,13 +70,56 @@ export class Game {
       return;
     }
 
-    const payload = {
+    const now = new Date();
+    const timeSpent = now - this.currentTurnStartTime;
+
+    if (currentTurn === "w") {
+      this.whiteTimeUsed += timeSpent;
+    } else {
+      this.blackTimeUsed += timeSpent;
+    }
+
+    if (this.whiteTimeUsed > this.maxTimePerPlayer) {
+      const winner = "black";
+      const gameOverPayload = JSON.stringify({
+        type: GAME_OVER,
+        payload: {
+          move,
+          winner,
+        },
+      });
+
+      this.player1.send(gameOverPayload);
+      this.player2.send(gameOverPayload);
+
+      return;
+    }
+
+    if (this.blackTimeUsed > this.maxTimePerPlayer) {
+      const winner = "white";
+      const gameOverPayload = JSON.stringify({
+        type: GAME_OVER,
+        payload: { move, winner },
+      });
+
+      this.player1.send(gameOverPayload);
+      this.player2.send(gameOverPayload);
+
+      return;
+    }
+
+    this.currentTurnStartTime = now;
+
+    const payload1 = {
       type: MOVE,
-      payload: move,
+      payload: {
+        move,
+        timeSpent,
+      },
     };
 
-    this.player1.send(JSON.stringify(payload));
-    this.player2.send(JSON.stringify(payload));
+    this.player1.send(JSON.stringify(payload1));
+    this.player2.send(JSON.stringify(payload1));
 
     if (this.board.isGameOver()) {
       const winner = this.board.turn() === "w" ? "black" : "white";

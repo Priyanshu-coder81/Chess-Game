@@ -4,8 +4,8 @@ import { ProfileCard } from "./ProfileCard.jsx";
 
 const ChessBoard = ({ board, socket, color, started, turn }) => {
   const [from, setFrom] = useState(null);
-  const [whiteTime, setWhiteTime] = useState(600);
-  const [blackTime, setBlackTime] = useState(600);
+  const [whiteTime, setWhiteTime] = useState(60);
+  const [blackTime, setBlackTime] = useState(60);
 
   const timerRef = useRef(null);
 

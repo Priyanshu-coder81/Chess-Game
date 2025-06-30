@@ -8,7 +8,6 @@ export const ProfileCard = ({ time, started }) => {
 
   const formatTime = `${mins}:${secs}`;
 
-  console.log(formatTime);
 
   return (
     <div className={`w-full text-white flex justify-between m-2 `}>

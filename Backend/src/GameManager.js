@@ -1,5 +1,5 @@
 import { Game } from "./Game.js";
-import { CONNECTING, INIT_GAME, MOVE } from "./message.js";
+import { CONNECTING, GAME_OVER, INIT_GAME, MOVE } from "./message.js";
 
 export class GameManager {
   constructor() {
@@ -31,10 +31,11 @@ export class GameManager {
           this.pendingUser = null;
         } else {
           this.pendingUser = socket;
-          socket.send(JSON.stringify({
-            type: CONNECTING,
-          }))
-          
+          socket.send(
+            JSON.stringify({
+              type: CONNECTING,
+            })
+          );
         }
         return;
       }
@@ -44,9 +45,13 @@ export class GameManager {
           (game) => game.player1 === socket || game.player2 === socket
         );
 
+
         if (game) {
-          game.makeMove(socket,message.payload);
-        } 
+          game.makeMove(socket, message.payload);
+        }
+      }
+
+      if (message.type === GAME_OVER) {
       }
     });
   }

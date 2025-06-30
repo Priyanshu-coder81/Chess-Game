@@ -41,7 +41,7 @@ const Game = () => {
           console.log("Game End");
           break;
         case MOVE:
-          const move = message.payload;
+          const move = message.payload.move;
           const result = chessRef.current.move(move);
           if (result) {
             setBoard(chessRef.current.board().map((row) => [...row]));
