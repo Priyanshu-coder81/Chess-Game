@@ -16,6 +16,22 @@ export class GameManager {
   removeUser(socket) {
     this.users = this.users.filter((user) => user !== socket);
 
+    const game = this.games.find(
+      (g) => g.player1 === socket || g.player2 === socket
+    );
+    if (game) {
+      clearInterval(game.timerInterval);
+      const winner = game.player1 === socket ? "black" : "white";
+      const gameOverPayload = JSON.stringify({
+        type: GAME_OVER,
+        payload: {
+          winner,
+          reason: "disconnect",
+        },
+      });
+      game.player1.send(gameOverPayload);
+      game.player2.send(gameOverPayload);
+    }
     // Stop the game because the user left
   }
 
@@ -44,7 +60,6 @@ export class GameManager {
         const game = this.games.find(
           (game) => game.player1 === socket || game.player2 === socket
         );
-
 
         if (game) {
           game.makeMove(socket, message.payload);

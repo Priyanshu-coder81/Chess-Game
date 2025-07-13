@@ -2,12 +2,17 @@ import { useEffect, useRef, useState } from "react";
 import { MOVE } from "../constant";
 import { ProfileCard } from "./ProfileCard.jsx";
 
-const ChessBoard = ({ board, socket, color, started, turn }) => {
+const ChessBoard = ({ board, socket, color, started, turn, gameResetTrigger }) => {
   const [from, setFrom] = useState(null);
-  const [whiteTime, setWhiteTime] = useState(60);
-  const [blackTime, setBlackTime] = useState(60);
+  const [whiteTime, setWhiteTime] = useState(20);
+  const [blackTime, setBlackTime] = useState(20);
 
   const timerRef = useRef(null);
+
+useEffect(()=> {
+  setBlackTime(20);
+  setWhiteTime(20);
+},[gameResetTrigger])
 
   useEffect(() => {
     clearInterval(timerRef.current);

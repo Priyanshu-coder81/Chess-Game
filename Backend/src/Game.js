@@ -1,4 +1,3 @@
-console.log("Game.js loaded");
 
 import { Chess } from "chess.js";
 import { GAME_OVER, INIT_GAME, MOVE } from "./message.js";
@@ -14,7 +13,7 @@ export class Game {
     this.playersColors.set(player2, "b");
 
     this.currentTurnStartTime = new Date();
-    this.maxTimePerPlayer = 60000; // 1 min
+    this.maxTimePerPlayer = 20000; // 20sec
     this.whiteTimeUsed = 0;
     this.blackTimeUsed = 0;
 
@@ -34,6 +33,38 @@ export class Game {
         },
       })
     );
+
+    this.timeInterval = setInterval(() => {
+      const now = new Date();
+      const timeSpent = now - this.currentTurnStartTime;
+      const currentTurn = this.board.turn();
+
+      if(currentTurn == 'w') {
+      if(timeSpent+this.whiteTimeUsed > this.maxTimePerPlayer) {
+          this.endGameDueToTimeEnd("black");
+      }
+    }
+    else {
+      if(timeSpent + this.blackTimeUsed > this.maxTimePerPlayer) {
+        this.endGameDueToTimeEnd("white");
+      }
+    }
+
+    }, 1000);
+  }
+
+  endGameDueToTimeEnd(winner) {
+    clearInterval(this.timeInterval); 
+  const gameOverPayload = JSON.stringify({
+    type: GAME_OVER,
+    payload: {
+      winner,
+      reason: "timeout"
+    }
+  });
+
+  this.player1.send(gameOverPayload);
+  this.player2.send(gameOverPayload);
   }
 
   makeMove(socket, move) {
@@ -122,6 +153,7 @@ export class Game {
     this.player2.send(JSON.stringify(payload1));
 
     if (this.board.isGameOver()) {
+      clearInterval(this.timeInterval);
       const winner = this.board.turn() === "w" ? "black" : "white";
 
       const gameOverPayload = JSON.stringify({
