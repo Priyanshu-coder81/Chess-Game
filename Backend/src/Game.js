@@ -110,6 +110,8 @@ export class Game {
       this.blackTimeUsed += timeSpent;
     }
 
+    const reason = "timeout";
+
     if (this.whiteTimeUsed > this.maxTimePerPlayer) {
       const winner = "black";
       const gameOverPayload = JSON.stringify({
@@ -117,6 +119,7 @@ export class Game {
         payload: {
           move,
           winner,
+          reason
         },
       });
 
@@ -130,7 +133,7 @@ export class Game {
       const winner = "white";
       const gameOverPayload = JSON.stringify({
         type: GAME_OVER,
-        payload: { move, winner },
+        payload: { move, winner,reason },
       });
 
       this.player1.send(gameOverPayload);
@@ -155,10 +158,10 @@ export class Game {
     if (this.board.isGameOver()) {
       clearInterval(this.timeInterval);
       const winner = this.board.turn() === "w" ? "black" : "white";
-
+      const reason = "checkmate"
       const gameOverPayload = JSON.stringify({
         type: GAME_OVER,
-        payload: { winner },
+        payload: { winner,reason },
       });
 
       this.player1.send(gameOverPayload);
