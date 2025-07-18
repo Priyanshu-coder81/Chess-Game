@@ -32,7 +32,7 @@ export class GameManager {
       game.player1.send(gameOverPayload);
       game.player2.send(gameOverPayload);
     }
-    // Stop the game because the user left
+    
   }
 
   addHandler(socket) {

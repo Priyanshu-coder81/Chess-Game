@@ -19,6 +19,7 @@ const Game = () => {
   const [winner, setWinner] = useState(null);
   const [gameOverReason, setGameOverReason] = useState(null);
   const [gameResetTrigger, setGameResetTrigger] = useState(0);
+  const [moveHistory , setMoveHistory] = useState([]);
 
   const handleNewGame = () => {
     setGameOver(false);
@@ -36,7 +37,6 @@ const Game = () => {
     socket.send(JSON.stringify({ type: INIT_GAME }));
   };
 
-  const handleOnConnecting = () => {};
 
   useEffect(() => {
     if (!socket) return;
@@ -57,6 +57,7 @@ const Game = () => {
           setColor(message.payload.color);
           setTurn("white");
           setGameOver(false);
+          setMoveHistory([]);
           console.log("Game Intialized");
           break;
         case GAME_OVER:
@@ -67,9 +68,18 @@ const Game = () => {
           break;
         case MOVE:
           const move = message.payload.move;
+          const timeSpent = message.payload.timeSpent;
           const result = chessRef.current.move(move);
           if (result) {
             setBoard(chessRef.current.board().map((row) => [...row]));
+            setMoveHistory((prev)=> [
+              ...prev,
+              {
+                san: result.san,
+                color: result.color === "w"? "white":"black",
+                timeSpent,
+              }
+            ])
             console.log("Move Applied : ", move);
           } else {
             console.warn("Invalid move recieved: ", move);
@@ -106,6 +116,7 @@ const Game = () => {
                 started={started}
                 turn={turn}
                 gameResetTrigger={gameResetTrigger}
+                connect = {connect}
               />
             </div>
 
@@ -118,7 +129,7 @@ const Game = () => {
                   Start Game
                 </Button>
               ) : (
-                <Dashboard color={color} />
+                <Dashboard color={color} moveHistory = {moveHistory}/>
               )}
             </div>
           </div>

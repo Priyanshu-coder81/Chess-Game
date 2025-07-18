@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { MOVE } from "../constant";
 import { ProfileCard } from "./ProfileCard.jsx";
 
-const ChessBoard = ({ board, socket, color, started, turn, gameResetTrigger }) => {
+const ChessBoard = ({ board, socket, color, started, turn, gameResetTrigger,connect }) => {
   const [from, setFrom] = useState(null);
   const [whiteTime, setWhiteTime] = useState(20);
   const [blackTime, setBlackTime] = useState(20);
@@ -33,9 +33,9 @@ useEffect(()=> {
   return (
     <div className='w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl mx-auto p-2'>
       {color === "black" ? (
-        <ProfileCard time={whiteTime} started={started} />
+        <ProfileCard time={whiteTime} started={started} connect = {connect} />
       ) : (
-        <ProfileCard time={blackTime} started={started} />
+        <ProfileCard time={blackTime} started={started} connect = {connect} />
       )}
       <div
         className={`flex flex-col ${
@@ -105,9 +105,9 @@ useEffect(()=> {
         ))}
       </div>
       {color === "white" ? (
-        <ProfileCard time={whiteTime} started={started} />
+        <ProfileCard time={whiteTime} started={started} connect = {connect} />
       ) : (
-        <ProfileCard time={blackTime} started={started} />
+        <ProfileCard time={blackTime} started={started} connect = {connect} />
       )}
     </div>
   );
