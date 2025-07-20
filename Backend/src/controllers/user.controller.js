@@ -1,5 +1,6 @@
 import { User } from "../models/User.models";
 import { ApiError } from "../utils/ApiError";
+import { ApiResponse } from "../utils/ApiResponse";
 import { asyncHandler } from "../utils/asyncHandler";
 import { uploadOnCloudinary } from "../utils/cloudinary";
 
@@ -29,6 +30,28 @@ const userRegister = asyncHandler(async (req, res) => {
   if (!avatar) {
     throw new ApiError(500, "Error while uploading in cloudinary");
   }
+
+  const user = await User.create({
+    username: username.toLowerCase(),
+    email,
+    avatar: avatar.url,
+    password,
+  });
+
+  const createdUser = await User.findById(user._id).select(
+    "-password -refreshToken"
+  );
+
+  if (!createdUser) {
+    throw new ApiError(
+      500,
+      "Something went wrong while creating Entry in database"
+    );
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, createdUser, "User Registered Successfully"));
 });
 
 const userLogin = asyncHandler(async (req, res) => {
@@ -42,11 +65,40 @@ const userLogin = asyncHandler(async (req, res) => {
     $or: [{ username }, { email }],
   });
 
-  if(!user) {
-    throw new ApiError(400,"User not registered");
+  if (!user) {
+    throw new ApiError(400, "User not registered");
   }
 
+  const userPasswordIsValid = await user.isPasswordCorrect(password);
 
+  if (!userPasswordIsValid) {
+    throw new ApiError(400, "Password is incorrect");
+  }
+
+  const { accessToken, refreshToken } = await generateAccessAndRefreshToken(
+    user._id
+  );
+
+  const loggedInUser = await User.findById(user._id).select(
+    "-password -refreshToken"
+  );
+
+  const options = {
+    httpOnly: true,
+    secure: true,
+  };
+
+  return res
+    .status(200)
+    .cookie("accessToken", accessToken, options)
+    .cookie("refreshToken", refreshToken, options)
+    .json(
+      new ApiResponse(
+        200,
+        { user: loggedInUser, accessToken, refreshToken },
+        "User Logged in Successfully"
+      )
+    );
 });
 
-export { userRegister };
+export { userRegister, userLogin };
