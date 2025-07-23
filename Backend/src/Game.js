@@ -3,7 +3,8 @@ import { Chess } from "chess.js";
 import { GAME_OVER, INIT_GAME, MOVE } from "./message.js";
 
 export class Game {
-  constructor(player1, player2) {
+  constructor(player1, player2 , gameId) {
+    this.gameId = gameId;
     this.player1 = player1;
     this.player2 = player2;
     (this.board = new Chess()), (this.startTime = new Date());
@@ -22,6 +23,7 @@ export class Game {
         type: INIT_GAME,
         payload: {
           color: "white",
+          gameId : this.gameId
         },
       })
     );
@@ -30,6 +32,7 @@ export class Game {
         type: INIT_GAME,
         payload: {
           color: "black",
+          gameId: this.gameId
         },
       })
     );

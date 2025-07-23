@@ -1,10 +1,11 @@
 import { Game } from "./Game.js";
 import { CONNECTING, GAME_OVER, INIT_GAME, MOVE } from "./message.js";
+import { nanoid } from "nanoid";
 
 export class GameManager {
   constructor() {
-    this.games = [];
-    this.pendingUser = null;
+    this.games = new Map();
+    this.matchQueue = [];
     this.users = [];
   }
 
@@ -12,27 +13,33 @@ export class GameManager {
     this.users.push(socket);
     this.addHandler(socket);
   }
-
+  // TODO: To optimize this, Remove for loop and search with gameId, 
+  // which is to be send by frontend (make changes at frontend) 
+  // ***SAME FOR MOVE, and GAME_OVER***
+   
   removeUser(socket) {
     this.users = this.users.filter((user) => user !== socket);
 
-    const game = this.games.find(
-      (g) => g.player1 === socket || g.player2 === socket
-    );
-    if (game) {
-      clearInterval(game.timerInterval);
-      const winner = game.player1 === socket ? "black" : "white";
-      const gameOverPayload = JSON.stringify({
-        type: GAME_OVER,
-        payload: {
-          winner,
-          reason: "disconnect",
-        },
-      });
-      game.player1.send(gameOverPayload);
-      game.player2.send(gameOverPayload);
+    for(const [gameId , game] of this.games.entries()) {
+
+      if(game.player1 === socket || game.player2 === socket) {
+        clearInterval(game.timerInterval);
+
+        const winner = game.player1 === socket ? "black": "white";
+
+        const gameOverPayload = JSON.stringify({
+          type: GAME_OVER,
+          payload: {
+            winner,
+            reason: "disconnect",
+          }
+        });
+        game.player1.send(gameOverPayload);
+        game.player2.send(gameOverPayload);
+        this.games.delete(gameId);
+        break;
+      }
     }
-    
   }
 
   addHandler(socket) {
@@ -41,28 +48,20 @@ export class GameManager {
 
       if (message.type === INIT_GAME) {
         // Remove any old game involving this socket
-        this.games = this.games.filter(
-          (g) => g.player1 !== socket && g.player2 !== socket
-        );
+        const user = { socket };
 
-        // Prevent user from being added as pending if already in a game
-        const inGame = this.games.some(
-          (g) => g.player1 === socket || g.player2 === socket
-        );
-        if (inGame) return;
+        this.matchQueue.push(user);
 
-        if (this.pendingUser && this.pendingUser !== socket) {
-          // Remove any old game involving pendingUser
-          this.games = this.games.filter(
-            (g) =>
-              g.player1 !== this.pendingUser && g.player2 !== this.pendingUser
-          );
-          // start game
-          const game = new Game(socket, this.pendingUser);
-          this.games.push(game);
-          this.pendingUser = null;
+        if (this.matchQueue.length >= 2) {
+          const player1 = this.matchQueue.shift();
+          const player2 = this.matchQueue.shift();
+
+          const gameId = nanoid();
+
+          const game = new Game(player1.socket, player2.socket, gameId);
+
+          this.games.set(gameId, game);
         } else {
-          this.pendingUser = socket;
           socket.send(
             JSON.stringify({
               type: CONNECTING,
@@ -73,23 +72,21 @@ export class GameManager {
       }
 
       if (message.type === MOVE) {
-        const game = this.games.find(
-          (game) => game.player1 === socket || game.player2 === socket
-        );
-
-        if (game) {
-          game.makeMove(socket, message.payload);
+        for (const [gameId, game] of this.games.entries()) {
+          if (game.player1 === socket || game.player2 === socket) {
+            game.makeMove(socket, message.payload);
+            break;
+          }
         }
       }
 
       if (message.type === GAME_OVER) {
-        const gameIndex = this.games.findIndex(
-          (game) => game.player1 === socket || game.player2 === socket
-        );
-
-        if (gameIndex !== -1) {
-          clearInterval(this.games[gameIndex].timerInterval);
-          this.games.splice(gameIndex, 1);
+        for(const [gameId , game] of this.games.entries()) {
+          if(game.player1 === socket || game.player2 === socket) {
+            clearInterval(game.timerInterval);
+            this.games.delete(gameId);
+            break;
+          }
         }
       }
     });
