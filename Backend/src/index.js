@@ -1,6 +1,6 @@
 import dotenv from "dotenv";
-
-import { WebSocketServer } from "ws";
+import { Server } from "socket.io";
+import http from "http";
 import { GameManager } from "./GameManager.js";
 import connectDB from "./db/index.js";
 
@@ -8,26 +8,32 @@ dotenv.config({ path: "./.env" });
 
 const port = process.env.PORT;
 
-const wss = new WebSocketServer({ port });
+const app = express();
 
-const gameManger = new GameManager();
+const server = http.createServer(app);
 
-(connectDB().then(()=> {
-   
-    console.log(`WebSocket server is listening on port ${port}`);
-  
-}).catch((err) => {
-  console.log("Connection Failed: ", err);
-  process.exit(1);
-}))
+// Todo adjust CORS
+const io = new Server(server, {
+  cors: {
+    origin: "*",
+  },
+});
 
-  
-  wss.on("connection", function connection(ws) {
-    gameManger.addUser(ws);
-  
-    ws.on("close", () => {
-      gameManger.removeUser(ws);
+const gameManger = new GameManager(io);
+
+connectDB()
+  .then(() => {
+    console.log("Database Connected");
+    server.listen(port, () => {
+      console.log(`Socket.IO server is running on port ${port}`);
     });
+  })
+  .catch((err) => {
+    console.log("Connection Failed: ", err);
+    process.exit(1);
   });
 
-
+  
+  io.on("connection", (socket) => {
+    gameManger.addUser(socket);
+  });
