@@ -18,8 +18,11 @@ export class GameManager {
       const { gameId, move } = payload;
       const game = this.games.get(gameId);
       if (game) {
+        console.log("Before making move in backend");
         game.makeMove(socket, move);
+        console.log("After making move in backend");
         this.io.to(gameId).emit("MOVE", move); // broadcast move to room
+
       }
     });
 
@@ -43,13 +46,6 @@ export class GameManager {
       const game = new Game(player1, player2, gameId, this.io);
       this.games.set(gameId, game);
 
-      this.io.to(gameId).emit("GAME_STARTED", {
-        gameId,
-        colorAssignments: {
-          [player1.id]: "white",
-          [player2.id]: "black"
-        }
-      });
     } else {
       socket.emit(CONNECTING);
     }
@@ -57,8 +53,8 @@ export class GameManager {
 
   removeUser(socket) {
     for (const [gameId, game] of this.games.entries()) {
-      if (game.hasPlayer(socket)) {
-        const winnerColor = game.getOpponentColor(socket);
+      if (game.player1 === socket || game.player2 === socket) {
+        const winnerColor = game.player1 === socket ? "black" : "white";
         this.io.to(gameId).emit(GAME_OVER, {
           winner: winnerColor,
           reason: "disconnect",
@@ -72,6 +68,3 @@ export class GameManager {
     this.matchQueue = this.matchQueue.filter((s) => s !== socket);
   }
 }
-
-
-

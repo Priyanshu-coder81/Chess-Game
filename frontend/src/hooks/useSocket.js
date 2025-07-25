@@ -1,23 +1,20 @@
 import { useEffect, useState } from "react";
 import { WS_URL } from "../constant";
+import {io} from "socket.io-client";
 
 
 export const useSocket = () => {
   const [socket, setSocket] = useState(null);
 
   useEffect(() => {
-    const ws = new WebSocket(WS_URL);
+    const socketInstance = io(WS_URL , {
+      transports: ['websocket'],
+    })
 
-    ws.onopen = () => {
-      setSocket(ws);
-    };
-
-    ws.onclose = () => {
-      setSocket(null);
-    };
+    setSocket(socketInstance);
 
     return ()=> {
-        ws.close();
+      socketInstance.disconnect();
     }
   }, []);
 

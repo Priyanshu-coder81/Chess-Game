@@ -6,8 +6,6 @@ import Landing from './screens/Landing';
 import Game from './screens/Game';
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
     <>
        <Router>

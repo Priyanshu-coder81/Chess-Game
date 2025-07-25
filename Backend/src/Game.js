@@ -80,7 +80,7 @@ export class Game {
     }
     if (!result) {
       console.log("Illegal move attempted");
-      socket.emt("invalid_move", {
+      socket.emit("invalid_move", {
         message: "Illegal Move",
       });
       return;

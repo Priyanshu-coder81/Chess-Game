@@ -10,6 +10,7 @@ import { CONNECTING, GAME_OVER, INIT_GAME, MOVE } from "../constant.js";
 const Game = () => {
   const socket = useSocket();
   const chessRef = useRef(new Chess());
+  const gameIdRef = useRef(null);
   const [board, setBoard] = useState(chessRef.current.board());
   const [started, setStarted] = useState(false);
   const [color, setColor] = useState(null);
@@ -19,7 +20,7 @@ const Game = () => {
   const [winner, setWinner] = useState(null);
   const [gameOverReason, setGameOverReason] = useState(null);
   const [gameResetTrigger, setGameResetTrigger] = useState(0);
-  const [moveHistory , setMoveHistory] = useState([]);
+  const [moveHistory, setMoveHistory] = useState([]);
 
   const handleNewGame = () => {
     setGameOver(false);
@@ -30,63 +31,67 @@ const Game = () => {
     setBoard(chessRef.current.board());
     setTurn("white");
     setGameResetTrigger((prev) => prev + 1);
-    socket.send(JSON.stringify({ type: INIT_GAME }));
+    socket.emit(INIT_GAME);
   };
 
   const handleOnClick = () => {
-    socket.send(JSON.stringify({ type: INIT_GAME }));
+    socket.emit(INIT_GAME);
   };
-
 
   useEffect(() => {
     if (!socket) return;
 
-    socket.onmessage = (event) => {
-      const message = JSON.parse(event.data);
+    socket.on("connect", () => {
+      console.log("Socket connected with ID:", socket.id);
+    });
+    socket.on(CONNECTING, () => {
+      setConnect(true);
+    });
 
-      console.log("Received From Socket - ", message);
+    socket.on(INIT_GAME, ({ gameId, color}) => {
+      setConnect(false);
+      setBoard(chessRef.current.board());
+      setStarted(true);
+      setColor(color);
+      setTurn("white");
+      setGameOver(false);
+      setMoveHistory([]);
+      gameIdRef.current = gameId;
+      console.log("Game Intialized");
+    });
 
-      switch (message.type) {
-        case CONNECTING:
-          setConnect(true);
-          break;
-        case INIT_GAME:
-          setConnect(false);
-          setBoard(chessRef.current.board());
-          setStarted(true);
-          setColor(message.payload.color);
-          setTurn("white");
-          setGameOver(false);
-          setMoveHistory([]);
-          console.log("Game Intialized");
-          break;
-        case GAME_OVER:
-          setGameOver(true);
-          setWinner(message.payload.winner);
-          setGameOverReason(message.payload.reason);
-          console.log("Game End", message.payload);
-          break;
-        case MOVE:
-          const move = message.payload.move;
-          const timeSpent = message.payload.timeSpent;
-          const result = chessRef.current.move(move);
-          if (result) {
-            setBoard(chessRef.current.board().map((row) => [...row]));
-            setMoveHistory((prev)=> [
-              ...prev,
-              {
-                san: result.san,
-                color: result.color === "w"? "white":"black",
-                timeSpent,
-              }
-            ])
-            console.log("Move Applied : ", move);
-          } else {
-            console.warn("Invalid move recieved: ", move);
-          }
-          setTurn(chessRef.current.turn() === "w" ? "white" : "black");
-          break;
+    socket.on(GAME_OVER, ({winner , reason}) => {
+      setGameOver(true);
+      setWinner(winner);
+      setGameOverReason(reason);
+      console.log("Game End",{winner , reason});
+    });
+
+    socket.on(MOVE, ({move , timeSpent}) => {
+      
+      const result = chessRef.current.move(move);
+      if (result) {
+        setBoard(chessRef.current.board().map((row) => [...row]));
+        setMoveHistory((prev) => [
+          ...prev,
+          {
+            san: result.san,
+            color: result.color === "w" ? "white" : "black",
+            timeSpent,
+          },
+        ]);
+        console.log("Move Applied : ", move);
+      } else {
+        console.warn("Invalid move recieved: ", move);
       }
+      setTurn(chessRef.current.turn() === "w" ? "white" : "black");
+    });
+
+    return () => {
+      socket.off(CONNECTING);
+      socket.off(INIT_GAME);
+      socket.off(MOVE);
+      socket.off(GAME_OVER);
     };
   }, [socket]);
 
@@ -99,13 +104,13 @@ const Game = () => {
       <div
         className={`min-h-screen  bg-zinc-900 text-white flex justify-center items-center`}
       >
-            {gameOver && (
-        <GameOver
-          winner={winner}
-          reason={gameOverReason}
-          onNewGame={handleNewGame}
-        />
-      )}
+        {gameOver && (
+          <GameOver
+            winner={winner}
+            reason={gameOverReason}
+            onNewGame={handleNewGame}
+          />
+        )}
         <div className={`pt-8 w-full max-w-5xl mx-auto`}>
           <div className='flex flex-col w-full gap-8 md:grid md:grid-cols-6 md:gap-4'>
             <div className='flex justify-center items-center w-full md:col-span-4 mb-8 md:mb-0'>
@@ -116,7 +121,8 @@ const Game = () => {
                 started={started}
                 turn={turn}
                 gameResetTrigger={gameResetTrigger}
-                connect = {connect}
+                connect={connect}
+                gameId = {gameIdRef.current}
               />
             </div>
 
@@ -129,14 +135,12 @@ const Game = () => {
                   Start Game
                 </Button>
               ) : (
-                <Dashboard color={color} moveHistory = {moveHistory}/>
+                <Dashboard color={color} moveHistory={moveHistory} />
               )}
             </div>
           </div>
         </div>
       </div>
-
-  
     </>
   );
 };
