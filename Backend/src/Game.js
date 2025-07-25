@@ -1,12 +1,12 @@
-
 import { Chess } from "chess.js";
 import { GAME_OVER, INIT_GAME, MOVE } from "./message.js";
 
 export class Game {
-  constructor(player1, player2 , gameId) {
+  constructor(player1, player2, gameId, io) {
     this.gameId = gameId;
     this.player1 = player1;
     this.player2 = player2;
+    this.io = io;
     (this.board = new Chess()), (this.startTime = new Date());
 
     this.playersColors = new Map();
@@ -18,56 +18,43 @@ export class Game {
     this.whiteTimeUsed = 0;
     this.blackTimeUsed = 0;
 
-    this.player1.send(
-      JSON.stringify({
-        type: INIT_GAME,
-        payload: {
-          color: "white",
-          gameId : this.gameId
-        },
-      })
-    );
-    this.player2.send(
-      JSON.stringify({
-        type: INIT_GAME,
-        payload: {
-          color: "black",
-          gameId: this.gameId
-        },
-      })
-    );
+    this.player1.join(this.gameId);
+    this.player2.join(this.gameId);
+
+    this.player1.emit(INIT_GAME, {
+      color: "white",
+      gameId: this.gameId,
+    });
+
+    this.player2.emit(INIT_GAME, {
+      color: "black",
+      gameId: this.gameId,
+    });
 
     this.timeInterval = setInterval(() => {
       const now = new Date();
       const timeSpent = now - this.currentTurnStartTime;
       const currentTurn = this.board.turn();
 
-      if(currentTurn == 'w') {
-      if(timeSpent+this.whiteTimeUsed > this.maxTimePerPlayer) {
+      if (currentTurn == "w") {
+        if (timeSpent + this.whiteTimeUsed > this.maxTimePerPlayer) {
           this.endGameDueToTimeEnd("black");
+        }
+      } else {
+        if (timeSpent + this.blackTimeUsed > this.maxTimePerPlayer) {
+          this.endGameDueToTimeEnd("white");
+        }
       }
-    }
-    else {
-      if(timeSpent + this.blackTimeUsed > this.maxTimePerPlayer) {
-        this.endGameDueToTimeEnd("white");
-      }
-    }
-
     }, 1000);
   }
 
   endGameDueToTimeEnd(winner) {
-    clearInterval(this.timeInterval); 
-  const gameOverPayload = JSON.stringify({
-    type: GAME_OVER,
-    payload: {
+    clearInterval(this.timeInterval);
+    const reason = "timeout";
+    this.io.to(this.gameId).emit(GAME_OVER, {
       winner,
-      reason: "timeout"
-    }
-  });
-
-  this.player1.send(gameOverPayload);
-  this.player2.send(gameOverPayload);
+      reason,
+    });
   }
 
   makeMove(socket, move) {
@@ -77,12 +64,10 @@ export class Game {
 
     if (playerColor !== currentTurn) {
       console.log("Invalid move : Not this player's turn");
-      socket.send(
-        JSON.stringify({
-          type: "Invalid Turn",
-          message: "It's not your turn",
-        })
-      );
+
+      socket.emit("invalid_turn", {
+        message: "It's  not you turn",
+      });
       return;
     }
 
@@ -95,12 +80,9 @@ export class Game {
     }
     if (!result) {
       console.log("Illegal move attempted");
-      socket.send(
-        JSON.stringify({
-          type: "Invalid Move",
-          message: "Illegal Move",
-        })
-      );
+      socket.emt("invalid_move", {
+        message: "Illegal Move",
+      });
       return;
     }
 
@@ -117,58 +99,42 @@ export class Game {
 
     if (this.whiteTimeUsed > this.maxTimePerPlayer) {
       const winner = "black";
-      const gameOverPayload = JSON.stringify({
-        type: GAME_OVER,
-        payload: {
-          move,
-          winner,
-          reason
-        },
+      this.io.to(this.gameId).emit(GAME_OVER, {
+        move,
+        winner,
+        reason,
       });
-
-      this.player1.send(gameOverPayload);
-      this.player2.send(gameOverPayload);
 
       return;
     }
 
     if (this.blackTimeUsed > this.maxTimePerPlayer) {
       const winner = "white";
-      const gameOverPayload = JSON.stringify({
-        type: GAME_OVER,
-        payload: { move, winner,reason },
+      this.io.to(this.gameId).emit(GAME_OVER, {
+        move,
+        winner,
+        reason,
       });
-
-      this.player1.send(gameOverPayload);
-      this.player2.send(gameOverPayload);
 
       return;
     }
 
     this.currentTurnStartTime = now;
 
-    const payload1 = {
-      type: MOVE,
-      payload: {
-        move,
-        timeSpent,
-      },
-    };
-
-    this.player1.send(JSON.stringify(payload1));
-    this.player2.send(JSON.stringify(payload1));
+    this.io.to(this.gameId).emit(MOVE,{
+      move,
+      timeSpent
+    })
 
     if (this.board.isGameOver()) {
       clearInterval(this.timeInterval);
       const winner = this.board.turn() === "w" ? "black" : "white";
-      const reason = "checkmate"
-      const gameOverPayload = JSON.stringify({
-        type: GAME_OVER,
-        payload: { winner,reason },
-      });
-
-      this.player1.send(gameOverPayload);
-      this.player2.send(gameOverPayload);
+      const reason = "checkmate";
+      
+      this.io.to(this.gameId).emit(GAME_OVER, {
+        winner,
+        reason
+      })
     }
   }
 }

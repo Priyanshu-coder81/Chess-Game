@@ -40,7 +40,7 @@ export class GameManager {
       player1.join(gameId);
       player2.join(gameId);
 
-      const game = new Game(player1, player2, gameId);
+      const game = new Game(player1, player2, gameId, this.io);
       this.games.set(gameId, game);
 
       this.io.to(gameId).emit("GAME_STARTED", {
