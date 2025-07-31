@@ -1,24 +1,26 @@
-import { useState } from 'react'
-import { BrowserRouter as Router, Routes,Route } from 'react-router-dom';
+import { useState } from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
-import './App.css'
-import Landing from './screens/Landing';
-import Game from './screens/Game';
+import "./App.css";
+import Landing from "./screens/Landing";
+import Game from "./screens/Game";
+import { Login } from "./components/Login";
+import { AuthProvider } from "./contexts/AuthContext";
 
 function App() {
   return (
-    <>
-       <Router>
-      <div>
-        <Routes>
-          <Route path="/" element={<Landing />} />
-          <Route path="/game" element={<Game />} />
-        </Routes>
-      </div>
-    </Router>
-       
-    </>
-  )
+    <AuthProvider>
+      <Router>
+        <div>
+          <Routes>
+            <Route path='/' element={<Landing />} />
+            <Route path='/login' element={<Login />} />
+            <Route path='/game' element={<Game />} />
+          </Routes>
+        </div>
+      </Router>
+    </AuthProvider>
+  );
 }
 
-export default App
+export default App;

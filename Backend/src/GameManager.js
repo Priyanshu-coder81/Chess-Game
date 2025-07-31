@@ -18,9 +18,7 @@ export class GameManager {
       const { gameId, move } = payload;
       const game = this.games.get(gameId);
       if (game) {
-        console.log("Before making move in backend");
         game.makeMove(socket, move);
-        console.log("After making move in backend");
         this.io.to(gameId).emit("MOVE", move); // broadcast move to room
 
       }
