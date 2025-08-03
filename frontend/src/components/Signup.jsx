@@ -89,7 +89,7 @@ export const Signup = () => {
 
       await register(userData);
       // Navigate to game or dashboard after successful registration
-      navigate("/game");
+      navigate("/login");
     } catch (error) {
       console.error("Signup failed:", error);
       // Error is already set in AuthContext
