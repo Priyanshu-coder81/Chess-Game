@@ -2,8 +2,12 @@ import { User } from "../models/User.models.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
-import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import {
+  uploadOnCloudinary,
+  deleteFromCloudinary,
+} from "../utils/cloudinary.js";
 import { generateAccessAndRefreshToken } from "../utils/tokenUtils.js";
+import jwt from "jsonwebtoken";
 
 const getPublicIdFromUrl = (url) => {
   if (!url) return null;
@@ -33,11 +37,12 @@ const userRegister = asyncHandler(async (req, res) => {
     throw new ApiError(400, "User with email or username already exists");
   }
 
-  const avatarLocalPath = req.files?.avatar[0].path;
-
-  if (!avatarLocalPath) {
-    throw new ApiError(400, "Avatar is required");
+  // Check if files exist and avatar is uploaded
+  if (!req.files || !req.files.avatar || !req.files.avatar[0]) {
+    throw new ApiError(400, "Avatar file is required");
   }
+
+  const avatarLocalPath = req.files.avatar[0].path;
 
   const avatar = await uploadOnCloudinary(avatarLocalPath);
 
@@ -241,7 +246,7 @@ const updateAvatar = asyncHandler(async (req, res) => {
     { new: true }
   ).select("-password -refreshToken");
 
-  const publicId = getPublicIdFromUrl(avatarUrlToBeDeleted);
+  const publicId = getPublicIdFromUrl(avatarToBeDeleted);
 
   if (publicId) {
     const response = await deleteFromCloudinary(publicId);

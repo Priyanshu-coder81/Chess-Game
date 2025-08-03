@@ -26,6 +26,10 @@ class ApiService {
       },
     };
 
+    if (options.body instanceof FormData) {
+      delete config.headers["Content-Type"];
+    }
+
     try {
       const response = await fetch(url, config);
 

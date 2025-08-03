@@ -5,6 +5,7 @@ import "./App.css";
 import Landing from "./screens/Landing";
 import Game from "./screens/Game";
 import { Login } from "./components/Login";
+import { Signup } from "./components/Signup";
 import { AuthProvider } from "./contexts/AuthContext";
 
 function App() {
@@ -15,6 +16,7 @@ function App() {
           <Routes>
             <Route path='/' element={<Landing />} />
             <Route path='/login' element={<Login />} />
+            <Route path='/signup' element={<Signup />} />
             <Route path='/game' element={<Game />} />
           </Routes>
         </div>

@@ -1,26 +1,26 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import { apiService } from "../services/api";
-import { ApiError } from "../../../Backend/src/utils/ApiError";
 
 const AuthContext = createContext();
 
-export const useAuth = () => {
+const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error(500, "useAuth must be used within an AuthProvider");
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 };
 
-export const AuthProvider = ({ children }) => {
+const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [formError, setFormError] = useState(null);
 
   // Check if user is already logged in on app start
-  useEffect(() => {
-    checkAuthStatus();
-  }, []);
+  // useEffect(() => {
+  //   checkAuthStatus();
+  // }, []);
 
   const checkAuthStatus = async () => {
     try {
@@ -29,6 +29,9 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.log("User not authenticated:", error.message);
       setUser(null);
+        // Clear any errors - this is expected behavior
+    setError(null);
+    setFormError(null);
     } finally {
       setLoading(false);
     }
@@ -40,6 +43,7 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
 
       const response = await apiService.login(credentials);
+
       setUser(response.data.user);
 
       return response;
@@ -86,19 +90,28 @@ export const AuthProvider = ({ children }) => {
 
   const clearError = () => {
     setError(null);
+    setFormError(null);
+  };
+
+  const setFormValidationError = (message) => {
+    setFormError(message);
   };
 
   const value = {
     user,
     loading,
     error,
+    formError,
     login,
     register,
     logout,
     updateUser,
     clearError,
+    setFormValidationError,
     isAuthenticated: !!user,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
+
+export { useAuth, AuthProvider };
