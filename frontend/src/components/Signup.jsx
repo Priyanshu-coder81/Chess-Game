@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
+import Silk from "./Silk";
 
 export const Signup = () => {
   const [formData, setFormData] = useState({
@@ -103,16 +104,28 @@ export const Signup = () => {
   };
 
   return (
-    <div className='min-h-screen bg-neutral-800 flex flex-col'>
+    <div className='min-h-screen flex flex-col'>
+        <Silk
+          speed={5}
+          scale={1}
+          color='#adff2f'
+          noiseIntensity={1.5}
+          rotation={0}
+          
+          style={{ zIndex: -1 }}
+        />
+        {/* Dark overlay for better readability */}
+        <div
+          className='fixed inset-0 bg-neutral-800/40'
+          style={{ zIndex: -1 }}
+        ></div>
       {/* Navbar */}
-      <div id='navbar' className='flex'>
-        <div>
-          <img src='./white_on_trans.png' alt='' className='w-20' />
+      <div id='navbar' className='flex relative z-10 pt-10'>
+          
+          <h2 className='w-full text-white font-bold text-center mt-4 justify-center align-baseline text-4xl font-serif text-shadow-2xs text-shadow-lime-400 hover:text-lime-400 pointer-none:'>
+            Chess Khelo
+          </h2>
         </div>
-        <h2 className='w-full text-white font-bold text-center mt-4 justify-center align-baseline text-3xl font-serif text-shadow-2xs text-shadow-lime-400 hover:text-lime-400 pointer-none:'>
-          Chess Khelo
-        </h2>
-      </div>
 
       {/* Signup Form Container */}
       <div className='flex-1 flex items-center justify-center px-4 py-8'>

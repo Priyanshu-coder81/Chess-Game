@@ -6,6 +6,9 @@ import { Chess } from "chess.js";
 import { Dashboard } from "../components/Dashboard.jsx";
 import { GameOver } from "../components/GameOver.jsx";
 import { CONNECTING, GAME_OVER, INIT_GAME, MOVE } from "../constant.js";
+import { useAuth } from "../contexts/AuthContext.jsx";
+import { useNavigate } from "react-router";
+import Navbar from "../components/Navbar";
 
 const Game = () => {
   const socket = useSocket();
@@ -21,6 +24,9 @@ const Game = () => {
   const [gameOverReason, setGameOverReason] = useState(null);
   const [gameResetTrigger, setGameResetTrigger] = useState(0);
   const [moveHistory, setMoveHistory] = useState([]);
+
+  const { user, isAuthenticated, logout } = useAuth();
+  const navigate = useNavigate();
 
   const handleNewGame = () => {
     setGameOver(false);
@@ -48,7 +54,7 @@ const Game = () => {
       setConnect(true);
     });
 
-    socket.on(INIT_GAME, ({ gameId, color}) => {
+    socket.on(INIT_GAME, ({ gameId, color }) => {
       setConnect(false);
       setBoard(chessRef.current.board());
       setStarted(true);
@@ -60,15 +66,14 @@ const Game = () => {
       console.log("Game Intialized");
     });
 
-    socket.on(GAME_OVER, ({winner , reason}) => {
+    socket.on(GAME_OVER, ({ winner, reason }) => {
       setGameOver(true);
       setWinner(winner);
       setGameOverReason(reason);
-      console.log("Game End",{winner , reason});
+      console.log("Game End", { winner, reason });
     });
 
-    socket.on(MOVE, ({move , timeSpent}) => {
-      
+    socket.on(MOVE, ({ move, timeSpent }) => {
       const result = chessRef.current.move(move);
       if (result) {
         setBoard(chessRef.current.board().map((row) => [...row]));
@@ -100,9 +105,11 @@ const Game = () => {
   }
 
   return (
-    <>
+    <div className='min-h-screen  bg-neutral-800 text-white'>
+      <Navbar />
+
       <div
-        className={`min-h-screen  bg-zinc-900 text-white flex justify-center items-center`}
+        className={` flex justify-center items-center`}
       >
         {gameOver && (
           <GameOver
@@ -111,6 +118,7 @@ const Game = () => {
             onNewGame={handleNewGame}
           />
         )}
+
         <div className={`pt-8 w-full max-w-5xl mx-auto`}>
           <div className='flex flex-col w-full gap-8 md:grid md:grid-cols-6 md:gap-4'>
             <div className='flex justify-center items-center w-full md:col-span-4 mb-8 md:mb-0'>
@@ -122,7 +130,7 @@ const Game = () => {
                 turn={turn}
                 gameResetTrigger={gameResetTrigger}
                 connect={connect}
-                gameId = {gameIdRef.current}
+                gameId={gameIdRef.current}
               />
             </div>
 
@@ -141,7 +149,7 @@ const Game = () => {
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 };
 

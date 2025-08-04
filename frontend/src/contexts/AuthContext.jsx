@@ -17,10 +17,10 @@ const AuthProvider = ({ children }) => {
   const [error, setError] = useState(null);
   const [formError, setFormError] = useState(null);
 
-  // Check if user is already logged in on app start
-  // useEffect(() => {
-  //   checkAuthStatus();
-  // }, []);
+ // Check if user is already logged in on app start
+  useEffect(() => {
+    checkAuthStatus();
+  }, []);
 
   const checkAuthStatus = async () => {
     try {
