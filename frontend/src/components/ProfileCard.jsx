@@ -1,3 +1,5 @@
+import { useAuth } from "../contexts/AuthContext";
+
 export const ProfileCard = ({ time, started,connect }) => {
   
 
@@ -8,12 +10,15 @@ export const ProfileCard = ({ time, started,connect }) => {
 
   const formatTime = `${mins}:${secs}`;
 
+  const {user} = useAuth();
+
+
 
   return (
     <div className={`w-full text-white flex justify-between m-2 `}>
       <div className='flex'>
-        <img src='/white_400.png' alt='' className='w-10 h-auto' />
-        <h2 className='pl-2'>{connect? "Searching" : "Guest24344428"}</h2>
+        <img src={user? user.avatar : "/white_400.png"} alt='' className='w-10 h-auto' />
+        <h2 className='pl-2'>{connect? "Searching" : user?.username || "Guest"}</h2>
       </div>
       <div className='bg-zinc-700 px-5  p-1.5 m-1'>
         {started === false ? `10:00` : formatTime}
