@@ -7,11 +7,11 @@ import { Dashboard } from "../components/Dashboard.jsx";
 import { GameOver } from "../components/GameOver.jsx";
 import { CONNECTING, GAME_OVER, INIT_GAME, MOVE } from "../constant.js";
 import { useAuth } from "../contexts/AuthContext.jsx";
-import { useNavigate } from "react-router";
 import Navbar from "../components/Navbar";
 
 const Game = () => {
   const socket = useSocket();
+  const {user} = useAuth();
   const chessRef = useRef(new Chess());
   const gameIdRef = useRef(null);
   const [board, setBoard] = useState(chessRef.current.board());
@@ -24,11 +24,9 @@ const Game = () => {
   const [gameOverReason, setGameOverReason] = useState(null);
   const [gameResetTrigger, setGameResetTrigger] = useState(0);
   const [moveHistory, setMoveHistory] = useState([]);
-  const [playersData , setPlayersData] = useState("Guest11111");
-  const [opponentData , setOpponentData] = useState("Guest22222");
+  const [playersData , setPlayersData] = useState({username:user?user.username:"Guest111",avatar:user?user.avatar:"/white_400.png"});
+  const [opponentData , setOpponentData] = useState({username:"Opponent",avatar:"/white_400.png"});
 
-  const { user, isAuthenticated, logout } = useAuth();
-  const navigate = useNavigate();
 
   const handleNewGame = () => {
     setGameOver(false);
@@ -45,6 +43,13 @@ const Game = () => {
   const handleOnClick = () => {
     socket.emit(INIT_GAME);
   };
+
+  
+useEffect(() => {
+  if (user) {
+    setPlayersData({ username: user.username, avatar: user.avatar || "/white_400.png" });
+  }
+}, [user]);
 
   useEffect(() => {
     if (!socket) return;

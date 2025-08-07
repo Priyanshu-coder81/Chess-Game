@@ -107,7 +107,7 @@ const ChessBoard = ({
           </div>
         ))}
       </div>
-      <ProfileCard time = {color==="white"?blackTime:whiteTime} started={started} connect={connect} playersData={playersData}></ProfileCard>
+      <ProfileCard time = {color==="white"?whiteTime:blackTime} started={started} connect={connect} playersData={playersData}></ProfileCard>
     </div>
   );
 };
