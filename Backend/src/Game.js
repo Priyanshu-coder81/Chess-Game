@@ -24,11 +24,19 @@ export class Game {
     this.player1.emit(INIT_GAME, {
       color: "white",
       gameId: this.gameId,
+      players: {
+        player: { username: this.player1.user.username, avatar: this.player1.user.avatar },
+        opponent: { username: this.player2.user.username, avatar: this.player2.user.avatar },
+      },
     });
 
     this.player2.emit(INIT_GAME, {
       color: "black",
       gameId: this.gameId,
+      players: {
+        opponent: { username: this.player1.user.username, avatar: this.player1.user.avatar },
+        player: { username: this.player2.user.username, avatar: this.player2.user.avatar },
+      },
     });
 
     this.timeInterval = setInterval(() => {
@@ -121,20 +129,20 @@ export class Game {
 
     this.currentTurnStartTime = now;
 
-    this.io.to(this.gameId).emit(MOVE,{
+    this.io.to(this.gameId).emit(MOVE, {
       move,
-      timeSpent
-    })
+      timeSpent,
+    });
 
     if (this.board.isGameOver()) {
       clearInterval(this.timeInterval);
       const winner = this.board.turn() === "w" ? "black" : "white";
       const reason = "checkmate";
-      
+
       this.io.to(this.gameId).emit(GAME_OVER, {
         winner,
-        reason
-      })
+        reason,
+      });
     }
   }
 }

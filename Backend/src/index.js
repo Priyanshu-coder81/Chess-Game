@@ -7,6 +7,8 @@ import cookieParser from "cookie-parser";
 import { GameManager } from "./GameManager.js";
 import connectDB from "./db/index.js";
 import userRoutes from "./routes/user.routes.js";
+import { verify } from "crypto";
+import { verifyAccessToken } from "./utils/verifyAccessToken.js";
 
 dotenv.config({ path: "./.env" });
 
@@ -60,6 +62,26 @@ connectDB()
     process.exit(1);
   });
 
-io.on("connection", (socket) => {
+io.on("connection", async (socket) => {
+  const token = socket.handshake.auth.token;
+  if (typeof token === "string" && token.trim() && token !== "undefined" && token !== "null") {
+
+    let user = null; 
+    try {
+       user = await verifyAccessToken(token);
+    }
+    catch(err) {
+      socket.disconnect();
+      return;
+    }
+    if(user) {
+      socket.user = user;
+    }
+  }/* else {
+    // Guest connection
+    const guestId = generateGuestId(); // your custom guest logic
+    socket.user = { username: `Guest-${guestId}`, avatar: "default.png" };
+    console.log("Guest connected:", socket.user.username);
+  } */
   gameManger.addUser(socket);
 });

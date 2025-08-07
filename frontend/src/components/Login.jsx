@@ -37,6 +37,7 @@ export const Login = () => {
       setIsSubmitting(true);
       await login(formData);
       // Navigate to game or dashboard after successful login
+      
       navigate("/game");
     } catch (error) {
       console.error("Login failed:", error);

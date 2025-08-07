@@ -16,6 +16,7 @@ const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [formError, setFormError] = useState(null);
+  const [token, setToken] = useState(null);
 
  // Check if user is already logged in on app start
   useEffect(() => {
@@ -45,6 +46,8 @@ const AuthProvider = ({ children }) => {
       const response = await apiService.login(credentials);
 
       setUser(response.data.user);
+      setToken(response.data.accessToken);
+      localStorage.setItem("token", response.data.accessToken);
 
       return response;
     } catch (error) {
@@ -99,6 +102,7 @@ const AuthProvider = ({ children }) => {
 
   const value = {
     user,
+    token,
     loading,
     error,
     formError,

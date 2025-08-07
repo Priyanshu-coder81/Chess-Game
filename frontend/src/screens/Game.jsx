@@ -24,6 +24,8 @@ const Game = () => {
   const [gameOverReason, setGameOverReason] = useState(null);
   const [gameResetTrigger, setGameResetTrigger] = useState(0);
   const [moveHistory, setMoveHistory] = useState([]);
+  const [playersData , setPlayersData] = useState("Guest11111");
+  const [opponentData , setOpponentData] = useState("Guest22222");
 
   const { user, isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
@@ -54,7 +56,7 @@ const Game = () => {
       setConnect(true);
     });
 
-    socket.on(INIT_GAME, ({ gameId, color }) => {
+    socket.on(INIT_GAME, ({ gameId, color, players }) => {
       setConnect(false);
       setBoard(chessRef.current.board());
       setStarted(true);
@@ -63,6 +65,8 @@ const Game = () => {
       setGameOver(false);
       setMoveHistory([]);
       gameIdRef.current = gameId;
+      setPlayersData(players.player);
+      setOpponentData(players.opponent);
       console.log("Game Intialized");
     });
 
@@ -131,6 +135,8 @@ const Game = () => {
                 gameResetTrigger={gameResetTrigger}
                 connect={connect}
                 gameId={gameIdRef.current}
+                playersData = {playersData}
+                opponentData = {opponentData}
               />
             </div>
 

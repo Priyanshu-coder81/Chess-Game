@@ -11,6 +11,8 @@ const ChessBoard = ({
   gameResetTrigger,
   connect,
   gameId,
+  playersData,
+  opponentData
 }) => {
   const [from, setFrom] = useState(null);
   const [whiteTime, setWhiteTime] = useState(20);
@@ -41,11 +43,8 @@ const ChessBoard = ({
 
   return (
     <div className='w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl mx-auto p-2'>
-      {color === "black" ? (
-        <ProfileCard time={whiteTime} started={started} connect={connect} />
-      ) : (
-        <ProfileCard time={blackTime} started={started} connect={connect} />
-      )}
+    
+      <ProfileCard time = {color==="white"?blackTime:whiteTime} started={started} connect={connect} playersData={opponentData}></ProfileCard>
       <div
         className={`flex flex-col ${
           color === "black" ? "flex-col-reverse" : ""
@@ -108,11 +107,7 @@ const ChessBoard = ({
           </div>
         ))}
       </div>
-      {color === "white" ? (
-        <ProfileCard time={whiteTime} started={started} connect={connect} />
-      ) : (
-        <ProfileCard time={blackTime} started={started} connect={connect} />
-      )}
+      <ProfileCard time = {color==="white"?blackTime:whiteTime} started={started} connect={connect} playersData={playersData}></ProfileCard>
     </div>
   );
 };
