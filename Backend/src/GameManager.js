@@ -30,6 +30,24 @@ export class GameManager {
   }
 
   handleMatchmaking(socket) {
+    // Check if the user is already in a game
+for (const [gameId, game] of this.games) {
+  if (game.player1 === socket || game.player2 === socket) {
+    this.games.delete(gameId);
+  }
+}
+
+const inGame = Array.from(this.games.values()).some(
+  (game) => game.player1 === socket || game.player2 === socket
+);
+    if(inGame) {
+     return; // User is already in a game, do not add to queue
+    }
+
+    if(this.matchQueue.includes(socket)) {
+      return; // User is already in the queue
+    }
+
     this.matchQueue.push(socket);
 
     if (this.matchQueue.length >= 2) {

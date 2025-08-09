@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { use, useEffect, useRef, useState } from "react";
 import { MOVE } from "../constant";
 import { ProfileCard } from "./ProfileCard.jsx";
 
@@ -12,13 +12,20 @@ const ChessBoard = ({
   connect,
   gameId,
   playersData,
-  opponentData
+  opponentData,
+  gameOver
 }) => {
   const [from, setFrom] = useState(null);
   const [whiteTime, setWhiteTime] = useState(20);
   const [blackTime, setBlackTime] = useState(20);
 
   const timerRef = useRef(null);
+
+useEffect(() => {
+  if (gameOver) {
+    clearInterval(timerRef.current);
+  }
+}, [gameOver]);
 
   useEffect(() => {
     setBlackTime(20);

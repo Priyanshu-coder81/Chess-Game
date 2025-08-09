@@ -142,6 +142,7 @@ useEffect(() => {
                 gameId={gameIdRef.current}
                 playersData = {playersData}
                 opponentData = {opponentData}
+                gameOver ={gameOver}
               />
             </div>
 
