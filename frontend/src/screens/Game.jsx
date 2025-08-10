@@ -155,7 +155,10 @@ useEffect(() => {
                   Start Game
                 </Button>
               ) : (
-                <Dashboard color={color} moveHistory={moveHistory} />
+                <Dashboard color={color} moveHistory={moveHistory}  onPlay={() => {/* implement play logic if needed */}}
+      onNewGame={handleNewGame}
+      isPlaying={started && !gameOver}
+      canStartNewGame={gameOver} />
               )}
             </div>
           </div>

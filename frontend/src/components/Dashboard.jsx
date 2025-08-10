@@ -2,7 +2,14 @@ import { RiTimerFlashLine } from "react-icons/ri";
 import { BsPlusSquareFill } from "react-icons/bs";
 import { LuAlarmClock } from "react-icons/lu";
 
-export const Dashboard = ({ color, moveHistory }) => {
+export const Dashboard = ({
+  color,
+  moveHistory,
+  onPlay,
+  onNewGame,
+  isPlaying,
+  canStartNewGame,
+}) => {
   // Group moves into pairs: [whiteMove, blackMove]
   const movePairs = [];
   for (let i = 0; i < moveHistory.length; i += 2) {
@@ -13,11 +20,23 @@ export const Dashboard = ({ color, moveHistory }) => {
     <div className='bg-zinc-700 w-full h-full p-4'>
       {/* Top Buttons */}
       <div className='grid grid-cols-2 gap-2 text-white mb-4'>
-        <button className='hover:bg-zinc-800 w-full text-center font-bold text-2xl flex flex-col items-center justify-center p-2'>
+        <button
+          className={`hover:bg-zinc-800 w-full text-center font-bold text-2xl flex flex-col items-center justify-center p-2 ${
+            isPlaying ? "bg-green-700" : "bg-zinc-800 opacity-60 cursor-not-allowed"
+          }`}
+          onClick={onPlay}
+          disabled={!isPlaying}
+        >
           <RiTimerFlashLine className='text-xl' />
           Play
         </button>
-        <button className='hover:bg-zinc-800 w-full text-center font-bold text-xl flex flex-col items-center justify-center p-2'>
+        <button
+          className={`hover:bg-zinc-800 w-full text-center font-bold text-xl flex flex-col items-center justify-center p-2 ${
+            canStartNewGame ? "bg-blue-700" : "bg-zinc-800 opacity-60 cursor-not-allowed"
+          }`}
+          onClick={onNewGame}
+          disabled={!canStartNewGame}
+        >
           <BsPlusSquareFill className='text-lg' />
           New Game
         </button>
@@ -42,8 +61,7 @@ export const Dashboard = ({ color, moveHistory }) => {
               <th className='p-2'>#</th>
               <th className='p-2'>White</th>
               <th className='p-2'>Black</th>
-              <th className='p-2 text-2xl'><LuAlarmClock />
-              </th>
+              <th className='p-2 text-2xl'><LuAlarmClock /></th>
             </tr>
           </thead>
           <tbody>

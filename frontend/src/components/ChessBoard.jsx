@@ -1,4 +1,4 @@
-import { use, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { MOVE } from "../constant";
 import { ProfileCard } from "./ProfileCard.jsx";
 
