@@ -21,11 +21,6 @@ const ChessBoard = ({
 
   const timerRef = useRef(null);
 
-useEffect(() => {
-  if (gameOver) {
-    clearInterval(timerRef.current);
-  }
-}, [gameOver]);
 
   useEffect(() => {
     setBlackTime(20);
@@ -35,18 +30,20 @@ useEffect(() => {
   useEffect(() => {
     clearInterval(timerRef.current);
 
-    if (started) {
+    if (started ) {
       timerRef.current = setInterval(() => {
+        if(!gameOver) {
         if (turn === "white") {
           setWhiteTime((prev) => Math.max(prev - 1, 0));
         } else if (turn === "black") {
           setBlackTime((prev) => Math.max(prev - 1, 0));
         }
+        }
       }, 1000);
     }
 
     return () => clearInterval(timerRef.current);
-  }, [turn, started]);
+  }, [turn, started,gameOver]);
 
   return (
     <div className='w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl mx-auto p-2'>

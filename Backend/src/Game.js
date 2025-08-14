@@ -25,8 +25,14 @@ export class Game {
       color: "white",
       gameId: this.gameId,
       players: {
-        player: { username: this.player1.user.username, avatar: this.player1.user.avatar },
-        opponent: { username: this.player2.user.username, avatar: this.player2.user.avatar },
+        player: {
+          username: this.player1.user.username,
+          avatar: this.player1.user.avatar,
+        },
+        opponent: {
+          username: this.player2.user.username,
+          avatar: this.player2.user.avatar,
+        },
       },
     });
 
@@ -34,8 +40,14 @@ export class Game {
       color: "black",
       gameId: this.gameId,
       players: {
-        opponent: { username: this.player1.user.username, avatar: this.player1.user.avatar },
-        player: { username: this.player2.user.username, avatar: this.player2.user.avatar },
+        opponent: {
+          username: this.player1.user.username,
+          avatar: this.player1.user.avatar,
+        },
+        player: {
+          username: this.player2.user.username,
+          avatar: this.player2.user.avatar,
+        },
       },
     });
 
@@ -54,6 +66,11 @@ export class Game {
         }
       }
     }, 1000);
+
+    // Ensure the timer is properly initialized
+    if (!this.timeInterval) {
+      console.error("Failed to initialize game timer");
+    }
   }
 
   endGameDueToTimeEnd(winner) {
@@ -63,6 +80,19 @@ export class Game {
       winner,
       reason,
     });
+  }
+
+  // Add method to clear timer when game ends for any reason
+  clearTimer() {
+    if (this.timeInterval) {
+      clearInterval(this.timeInterval);
+      this.timeInterval = null;
+    }
+  }
+
+  // Destructor method to ensure cleanup
+  destroy() {
+    this.clearTimer();
   }
 
   makeMove(socket, move) {
@@ -107,6 +137,7 @@ export class Game {
 
     if (this.whiteTimeUsed > this.maxTimePerPlayer) {
       const winner = "black";
+      this.clearTimer();
       this.io.to(this.gameId).emit(GAME_OVER, {
         move,
         winner,
@@ -118,6 +149,7 @@ export class Game {
 
     if (this.blackTimeUsed > this.maxTimePerPlayer) {
       const winner = "white";
+      this.clearTimer();
       this.io.to(this.gameId).emit(GAME_OVER, {
         move,
         winner,
@@ -135,7 +167,7 @@ export class Game {
     });
 
     if (this.board.isGameOver()) {
-      clearInterval(this.timeInterval);
+      this.clearTimer();
       const winner = this.board.turn() === "w" ? "black" : "white";
       const reason = "checkmate";
 

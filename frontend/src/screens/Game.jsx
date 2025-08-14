@@ -1,7 +1,7 @@
 import ChessBoard from "../components/ChessBoard";
 import Button from "../components/Button";
 import { useSocket } from "../hooks/useSocket.js";
-import { useEffect, useRef, useState } from "react";
+import { use, useEffect, useRef, useState } from "react";
 import { Chess } from "chess.js";
 import { Dashboard } from "../components/Dashboard.jsx";
 import { GameOver } from "../components/GameOver.jsx";
@@ -24,6 +24,7 @@ const Game = () => {
   const [gameOverReason, setGameOverReason] = useState(null);
   const [gameResetTrigger, setGameResetTrigger] = useState(0);
   const [moveHistory, setMoveHistory] = useState([]);
+  const [showGameOver , setShowGameOver] = useState(false);
   const [playersData , setPlayersData] = useState({username:user?user.username:"Guest111",avatar:user?user.avatar:"/white_400.png"});
   const [opponentData , setOpponentData] = useState({username:"Opponent",avatar:"/white_400.png"});
 
@@ -43,6 +44,10 @@ const Game = () => {
   const handleOnClick = () => {
     socket.emit(INIT_GAME);
   };
+  
+  const handleCloseGameOver = () => {
+    setShowGameOver(false);
+  }
 
   
 useEffect(() => {
@@ -79,6 +84,7 @@ useEffect(() => {
       setGameOver(true);
       setWinner(winner);
       setGameOverReason(reason);
+      setShowGameOver(true);
       console.log("Game End", { winner, reason });
     });
 
@@ -120,11 +126,14 @@ useEffect(() => {
       <div
         className={` flex justify-center items-center`}
       >
-        {gameOver && (
+        {gameOver && showGameOver && (
           <GameOver
             winner={winner}
             reason={gameOverReason}
-            onNewGame={handleNewGame}
+            onNewGame={()=> {handleNewGame();
+              setShowGameOver(false);
+            }}
+            onClose={handleCloseGameOver}
           />
         )}
 
