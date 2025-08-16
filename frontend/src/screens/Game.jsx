@@ -11,7 +11,7 @@ import Navbar from "../components/Navbar";
 
 const Game = () => {
   const socket = useSocket();
-  const {user} = useAuth();
+  const { user } = useAuth();
   const chessRef = useRef(new Chess());
   const gameIdRef = useRef(null);
   const [board, setBoard] = useState(chessRef.current.board());
@@ -24,10 +24,15 @@ const Game = () => {
   const [gameOverReason, setGameOverReason] = useState(null);
   const [gameResetTrigger, setGameResetTrigger] = useState(0);
   const [moveHistory, setMoveHistory] = useState([]);
-  const [showGameOver , setShowGameOver] = useState(false);
-  const [playersData , setPlayersData] = useState({username:user?user.username:"Guest111",avatar:user?user.avatar:"/white_400.png"});
-  const [opponentData , setOpponentData] = useState({username:"Opponent",avatar:"/white_400.png"});
-
+  const [showGameOver, setShowGameOver] = useState(false);
+  const [playersData, setPlayersData] = useState({
+    username: user ? user.username : "Guest111",
+    avatar: user ? user.avatar : "/white_400.png",
+  });
+  const [opponentData, setOpponentData] = useState({
+    username: "Opponent",
+    avatar: "/white_400.png",
+  });
 
   const handleNewGame = () => {
     setGameOver(false);
@@ -37,24 +42,45 @@ const Game = () => {
     chessRef.current = new Chess();
     setBoard(chessRef.current.board());
     setTurn("white");
+    setOpponentData({ username: "Searching", avatar: "/white_400.png" });
     setGameResetTrigger((prev) => prev + 1);
     socket.emit(INIT_GAME);
+  };
+
+  const handleResign = () => {
+    if (socket && gameIdRef.current && started && !gameOver) {
+      socket.emit("resign", { gameId: gameIdRef.current });
+      setGameOver(true);
+      setWinner(color === "white" ? "black" : "white");
+      setGameOverReason("Resignation");
+      setShowGameOver(true);
+    }
+  };
+
+  const handleDraw = () => {
+    if (socket && gameIdRef.current && started && !gameOver) {
+      socket.emit("draw_offer", { gameId: gameIdRef.current });
+      // You can add a toast notification here to inform the user that draw offer was sent
+      console.log("Draw offer sent");
+    }
   };
 
   const handleOnClick = () => {
     socket.emit(INIT_GAME);
   };
-  
+
   const handleCloseGameOver = () => {
     setShowGameOver(false);
-  }
+  };
 
-  
-useEffect(() => {
-  if (user) {
-    setPlayersData({ username: user.username, avatar: user.avatar || "/white_400.png" });
-  }
-}, [user]);
+  useEffect(() => {
+    if (user) {
+      setPlayersData({
+        username: user.username,
+        avatar: user.avatar || "/white_400.png",
+      });
+    }
+  }, [user]);
 
   useEffect(() => {
     if (!socket) return;
@@ -107,11 +133,50 @@ useEffect(() => {
       setTurn(chessRef.current.turn() === "w" ? "white" : "black");
     });
 
+    socket.on("resign_accepted", ({ gameId }) => {
+      if (gameId === gameIdRef.current) {
+        setGameOver(true);
+        setWinner(color === "white" ? "black" : "white");
+        setGameOverReason("Resignation");
+        setShowGameOver(true);
+      }
+    });
+
+    socket.on("draw_offered", ({ gameId, fromPlayer }) => {
+      if (gameId === gameIdRef.current && fromPlayer !== color) {
+        // Show draw offer dialog or notification
+        const acceptDraw = window.confirm(
+          "Your opponent has offered a draw. Accept?"
+        );
+        if (acceptDraw) {
+          socket.emit("draw_accepted", { gameId });
+          setGameOver(true);
+          setWinner(null);
+          setGameOverReason("Draw by agreement");
+          setShowGameOver(true);
+        } else {
+          socket.emit("draw_declined", { gameId });
+        }
+      }
+    });
+
+    socket.on("draw_accepted", ({ gameId }) => {
+      if (gameId === gameIdRef.current) {
+        setGameOver(true);
+        setWinner(null);
+        setGameOverReason("Draw by agreement");
+        setShowGameOver(true);
+      }
+    });
+
     return () => {
       socket.off(CONNECTING);
       socket.off(INIT_GAME);
       socket.off(MOVE);
       socket.off(GAME_OVER);
+      socket.off("resign_accepted");
+      socket.off("draw_offered");
+      socket.off("draw_accepted");
     };
   }, [socket]);
 
@@ -123,14 +188,13 @@ useEffect(() => {
     <div className='min-h-screen  bg-neutral-800 text-white'>
       <Navbar />
 
-      <div
-        className={` flex justify-center items-center`}
-      >
+      <div className={` flex justify-center items-center`}>
         {gameOver && showGameOver && (
           <GameOver
             winner={winner}
             reason={gameOverReason}
-            onNewGame={()=> {handleNewGame();
+            onNewGame={() => {
+              handleNewGame();
               setShowGameOver(false);
             }}
             onClose={handleCloseGameOver}
@@ -149,9 +213,9 @@ useEffect(() => {
                 gameResetTrigger={gameResetTrigger}
                 connect={connect}
                 gameId={gameIdRef.current}
-                playersData = {playersData}
-                opponentData = {opponentData}
-                gameOver ={gameOver}
+                playersData={playersData}
+                opponentData={opponentData}
+                gameOver={gameOver}
               />
             </div>
 
@@ -164,10 +228,18 @@ useEffect(() => {
                   Start Game
                 </Button>
               ) : (
-                <Dashboard color={color} moveHistory={moveHistory}  onPlay={() => {/* implement play logic if needed */}}
-      onNewGame={handleNewGame}
-      isPlaying={started && !gameOver}
-      canStartNewGame={gameOver} />
+                <Dashboard
+                  color={color}
+                  moveHistory={moveHistory}
+                  onPlay={() => {
+                    /* implement play logic if needed */
+                  }}
+                  onNewGame={handleNewGame}
+                  isPlaying={started && !gameOver}
+                  canStartNewGame={gameOver}
+                  onResign={handleResign}
+                  onDraw={handleDraw}
+                />
               )}
             </div>
           </div>

@@ -1,6 +1,8 @@
 import { RiTimerFlashLine } from "react-icons/ri";
 import { BsPlusSquareFill } from "react-icons/bs";
 import { LuAlarmClock } from "react-icons/lu";
+import { IoHomeOutline } from "react-icons/io5";
+import { useNavigate } from "react-router-dom";
 
 export const Dashboard = ({
   color,
@@ -9,36 +11,75 @@ export const Dashboard = ({
   onNewGame,
   isPlaying,
   canStartNewGame,
+  onResign,
+  onDraw,
 }) => {
+  const navigate = useNavigate();
+
   // Group moves into pairs: [whiteMove, blackMove]
   const movePairs = [];
   for (let i = 0; i < moveHistory.length; i += 2) {
     movePairs.push([moveHistory[i], moveHistory[i + 1]]);
   }
 
+  const handleResign = () => {
+    if (onResign) {
+      onResign();
+    }
+  };
+
+  const handleDraw = () => {
+    if (onDraw) {
+      onDraw();
+    }
+  };
+
+  const handleGoHome = () => {
+    navigate("/");
+  };
+
   return (
     <div className='bg-zinc-700 w-full h-full p-4'>
       {/* Top Buttons */}
-      <div className='grid grid-cols-2 gap-2 text-white mb-4'>
+      <div className='grid grid-cols-3 gap-2 text-white mb-4'>
         <button
-          className={`hover:bg-zinc-800 w-full text-center font-bold text-2xl flex flex-col items-center justify-center p-2 ${
-            isPlaying ? "bg-green-700" : "bg-zinc-800 opacity-60 cursor-not-allowed"
+          className={`hover:bg-zinc-800 w-full text-center font-bold text-2xl flex flex-col items-center justify-center p-2 transition-colors duration-200 ${
+            isPlaying ? "bg-lime-500 text-black" : "bg-zinc-800"
           }`}
           onClick={onPlay}
-          disabled={!isPlaying}
         >
           <RiTimerFlashLine className='text-xl' />
           Play
         </button>
         <button
-          className={`hover:bg-zinc-800 w-full text-center font-bold text-xl flex flex-col items-center justify-center p-2 ${
-            canStartNewGame ? "bg-blue-700" : "bg-zinc-800 opacity-60 cursor-not-allowed"
-          }`}
+          className='hover:bg-zinc-800 w-full text-center font-bold text-xl flex flex-col items-center justify-center p-2 bg-zinc-800 transition-colors duration-200'
           onClick={onNewGame}
-          disabled={!canStartNewGame}
         >
           <BsPlusSquareFill className='text-lg' />
           New Game
+        </button>
+        <button
+          className='hover:bg-zinc-800 w-full text-center font-bold text-lg flex flex-col items-center justify-center p-2 bg-zinc-800 transition-colors duration-200'
+          onClick={handleGoHome}
+        >
+          <IoHomeOutline className='text-lg' />
+          Home
+        </button>
+      </div>
+
+      {/* Resign and Draw Buttons */}
+      <div className='flex justify-center gap-6 mb-4'>
+        <button
+          onClick={handleResign}
+          className='text-red-400 hover:text-red-300 text-sm font-medium transition-colors duration-200 cursor-pointer'
+        >
+          Resign
+        </button>
+        <button
+          onClick={handleDraw}
+          className='text-yellow-400 hover:text-yellow-300 text-sm font-medium transition-colors duration-200 cursor-pointer'
+        >
+          Draw
         </button>
       </div>
 
@@ -61,7 +102,9 @@ export const Dashboard = ({
               <th className='p-2'>#</th>
               <th className='p-2'>White</th>
               <th className='p-2'>Black</th>
-              <th className='p-2 text-2xl'><LuAlarmClock /></th>
+              <th className='p-2 text-2xl'>
+                <LuAlarmClock />
+              </th>
             </tr>
           </thead>
           <tbody>
