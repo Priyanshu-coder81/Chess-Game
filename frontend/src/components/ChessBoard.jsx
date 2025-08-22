@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { MOVE } from "../constant";
 import { ProfileCard } from "./ProfileCard.jsx";
+import { useAuth } from "../contexts/AuthContext.jsx";
 
 const ChessBoard = ({
   board,
-  socket,
   color,
   started,
   turn,
@@ -13,42 +13,48 @@ const ChessBoard = ({
   gameId,
   playersData,
   opponentData,
-  gameOver
+  gameOver,
 }) => {
   const [from, setFrom] = useState(null);
-  const [whiteTime, setWhiteTime] = useState(20);
-  const [blackTime, setBlackTime] = useState(20);
+  const [whiteTime, setWhiteTime] = useState(null);
+  const [blackTime, setBlackTime] = useState(null);
+  const {socket} = useAuth();
 
   const timerRef = useRef(null);
 
-
+  // Reset timer when game resets
   useEffect(() => {
-    setBlackTime(20);
     setWhiteTime(20);
+    setBlackTime(20);
   }, [gameResetTrigger]);
 
   useEffect(() => {
-    clearInterval(timerRef.current);
+    if (!socket) return;
+    console.log("Socket is available in ChessBoard", socket);
 
-    if (started ) {
-      timerRef.current = setInterval(() => {
-        if(!gameOver) {
-        if (turn === "white") {
-          setWhiteTime((prev) => Math.max(prev - 1, 0));
-        } else if (turn === "black") {
-          setBlackTime((prev) => Math.max(prev - 1, 0));
-        }
-        }
-      }, 1000);
-    }
+   
 
-    return () => clearInterval(timerRef.current);
-  }, [turn, started,gameOver]);
+    socket.on("time_update", ({whiteTime,blackTime})=> {
+      console.log('Received time_update:', whiteTime, blackTime);
+      setWhiteTime(Math.max(0, whiteTime/1000 ));
+      setBlackTime(Math.max(0, blackTime/1000 ));
+    });
 
+    return () => {
+      socket.off("time_update");
+    };
+  }, [socket]);
+
+ 
   return (
     <div className='w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl mx-auto p-2'>
-    
-      <ProfileCard time = {color==="white"?blackTime:whiteTime} started={started} connect={connect} playersData={opponentData}></ProfileCard>
+      <ProfileCard
+        time={color === "white" ? blackTime : whiteTime}
+        started={started}
+        connect={connect}
+        playersData={opponentData}
+      ></ProfileCard>
+
       <div
         className={`flex flex-col ${
           color === "black" ? "flex-col-reverse" : ""
@@ -111,7 +117,13 @@ const ChessBoard = ({
           </div>
         ))}
       </div>
-      <ProfileCard time = {color==="white"?whiteTime:blackTime} started={started} connect={connect} playersData={playersData}></ProfileCard>
+
+      <ProfileCard
+        time={color === "white" ? whiteTime : blackTime}
+        started={started}
+        connect={connect}
+        playersData={playersData}
+      ></ProfileCard>
     </div>
   );
 };

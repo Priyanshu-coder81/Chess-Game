@@ -1,5 +1,14 @@
 import { Chess } from "chess.js";
-import { GAME_OVER, INIT_GAME, MOVE } from "./message.js";
+import {
+  GAME_OVER,
+  INIT_GAME,
+  MOVE,
+  RESIGN,
+  DRAW_OFFER,
+  DRAW_ACCEPTED,
+  DRAW_DECLINED,
+  RESIGN_ACCEPTED,
+} from "./message.js";
 
 export class Game {
   constructor(player1, player2, gameId, io) {
@@ -7,19 +16,30 @@ export class Game {
     this.player1 = player1;
     this.player2 = player2;
     this.io = io;
-    (this.board = new Chess()), (this.startTime = new Date());
+    this.board = new Chess();
+    this.startTime = new Date();
+    this.gameState = "playing"; // playing, resigned, draw, checkmate, timeout
 
     this.playersColors = new Map();
     this.playersColors.set(player1, "w");
     this.playersColors.set(player2, "b");
 
     this.currentTurnStartTime = new Date();
-    this.maxTimePerPlayer = 20000; // 20sec
+    this.maxTimePerPlayer = 20000; // 20 seconds
     this.whiteTimeUsed = 0;
     this.blackTimeUsed = 0;
+    this.whiteTimeRemaining = this.maxTimePerPlayer;
+    this.blackTimeRemaining = this.maxTimePerPlayer;
 
     this.player1.join(this.gameId);
     this.player2.join(this.gameId);
+
+    // Set up event listeners for resign and draw
+    if (this.player1 && this.player2) {
+      this.setupGameEvents();
+    } else {
+      console.error("Cannot set up game events: invalid players");
+    }
 
     this.player1.emit(INIT_GAME, {
       color: "white",
@@ -52,29 +72,172 @@ export class Game {
     });
 
     this.timeInterval = setInterval(() => {
+      if (this.gameState !== "playing") return;
+
       const now = new Date();
       const timeSpent = now - this.currentTurnStartTime;
       const currentTurn = this.board.turn();
 
-      if (currentTurn == "w") {
-        if (timeSpent + this.whiteTimeUsed > this.maxTimePerPlayer) {
+      if (currentTurn === "w") {
+        this.whiteTimeRemaining = Math.max(
+          0,
+          this.maxTimePerPlayer - this.whiteTimeUsed - timeSpent
+        );
+        if (this.whiteTimeRemaining <= 0) {
           this.endGameDueToTimeEnd("black");
         }
       } else {
-        if (timeSpent + this.blackTimeUsed > this.maxTimePerPlayer) {
+        this.blackTimeRemaining = Math.max(
+          0,
+          this.maxTimePerPlayer - this.blackTimeUsed - timeSpent
+        );
+        if (this.blackTimeRemaining <= 0) {
           this.endGameDueToTimeEnd("white");
         }
       }
-    }, 1000);
 
+      // Emit time updates to keep frontend synchronized
+      this.io
+        .to(this.gameId)
+        .emit("time_update", {
+          whiteTime: this.whiteTimeRemaining,
+          blackTime: this.blackTimeRemaining,
+        });
+      
+        
+    }, 1000); // Update every 100ms for smoother countdown
     // Ensure the timer is properly initialized
     if (!this.timeInterval) {
       console.error("Failed to initialize game timer");
     }
   }
 
+  setupGameEvents() {
+    // Only set up events if players are valid socket objects
+    if (
+      !this.player1 ||
+      !this.player2 ||
+      typeof this.player1.on !== "function" ||
+      typeof this.player2.on !== "function"
+    ) {
+      console.log("Cannot set up game events: invalid player sockets");
+      return;
+    }
+
+    // Handle resign
+    this.player1.on(RESIGN, () => {
+      if (this.gameState === "playing") {
+        this.handleResign(this.player1);
+      }
+    });
+
+    this.player2.on(RESIGN, () => {
+      if (this.gameState === "playing") {
+        this.handleResign(this.player2);
+      }
+    });
+
+    // Handle draw offers
+    this.player1.on(DRAW_OFFER, () => {
+      if (this.gameState === "playing") {
+        this.handleDrawOffer(this.player1);
+      }
+    });
+
+    this.player2.on(DRAW_OFFER, () => {
+      if (this.gameState === "playing") {
+        this.handleDrawOffer(this.player2);
+      }
+    });
+
+    // Handle draw responses
+    this.player1.on(DRAW_ACCEPTED, () => {
+      if (this.gameState === "playing") {
+        this.handleDrawAccepted(this.player1);
+      }
+    });
+
+    this.player2.on(DRAW_ACCEPTED, () => {
+      if (this.gameState === "playing") {
+        this.handleDrawAccepted(this.player2);
+      }
+    });
+
+    this.player1.on(DRAW_DECLINED, () => {
+      if (this.gameState === "playing") {
+        this.handleDrawDeclined(this.player1);
+      }
+    });
+
+    this.player2.on(DRAW_DECLINED, () => {
+      if (this.gameState === "playing") {
+        this.handleDrawDeclined(this.player2);
+      }
+    });
+  }
+
+  handleResign(resigningPlayer) {
+    if (this.gameState !== "playing") return;
+
+    this.gameState = "resigned";
+    const winner =
+      this.playersColors.get(resigningPlayer) === "w" ? "black" : "white";
+
+    this.clearTimer();
+    this.io.to(this.gameId).emit(RESIGN_ACCEPTED, {
+      gameId: this.gameId,
+      winner,
+      reason: "resignation",
+    });
+
+    this.io.to(this.gameId).emit(GAME_OVER, {
+      winner,
+      reason: "resignation",
+    });
+  }
+
+  handleDrawOffer(offeringPlayer) {
+    if (this.gameState !== "playing") return;
+
+    const opponent =
+      offeringPlayer === this.player1 ? this.player2 : this.player1;
+    opponent.emit(DRAW_OFFER, {
+      gameId: this.gameId,
+      fromPlayer: this.playersColors.get(offeringPlayer),
+    });
+  }
+
+  handleDrawAccepted(acceptingPlayer) {
+    if (this.gameState !== "playing") return;
+
+    this.gameState = "draw";
+    this.clearTimer();
+
+    this.io.to(this.gameId).emit(DRAW_ACCEPTED, {
+      gameId: this.gameId,
+    });
+
+    this.io.to(this.gameId).emit(GAME_OVER, {
+      winner: null,
+      reason: "draw",
+    });
+  }
+
+  handleDrawDeclined(decliningPlayer) {
+    if (this.gameState !== "playing") return;
+
+    const opponent =
+      decliningPlayer === this.player1 ? this.player2 : this.player1;
+    opponent.emit(DRAW_DECLINED, {
+      gameId: this.gameId,
+    });
+  }
+
   endGameDueToTimeEnd(winner) {
-    clearInterval(this.timeInterval);
+    if (this.gameState !== "playing") return;
+
+    this.gameState = "timeout";
+    this.clearTimer();
     const reason = "timeout";
     this.io.to(this.gameId).emit(GAME_OVER, {
       winner,
@@ -93,18 +256,36 @@ export class Game {
   // Destructor method to ensure cleanup
   destroy() {
     this.clearTimer();
+
+    // Remove event listeners safely
+    try {
+      if (this.player1 && typeof this.player1.off === "function") {
+        this.player1.off(RESIGN);
+        this.player1.off(DRAW_OFFER);
+        this.player1.off(DRAW_ACCEPTED);
+        this.player1.off(DRAW_DECLINED);
+      }
+      if (this.player2 && typeof this.player2.off === "function") {
+        this.player2.off(RESIGN);
+        this.player2.off(DRAW_OFFER);
+        this.player2.off(DRAW_ACCEPTED);
+        this.player2.off(DRAW_DECLINED);
+      }
+    } catch (error) {
+      console.log("Error during event listener cleanup:", error);
+    }
   }
 
   makeMove(socket, move) {
-    const currentTurn = this.board.turn();
+    if (this.gameState !== "playing") return;
 
+    const currentTurn = this.board.turn();
     const playerColor = this.playersColors.get(socket);
 
     if (playerColor !== currentTurn) {
       console.log("Invalid move : Not this player's turn");
-
       socket.emit("invalid_turn", {
-        message: "It's  not you turn",
+        message: "It's not your turn",
       });
       return;
     }
@@ -114,8 +295,13 @@ export class Game {
     try {
       result = this.board.move(move);
     } catch (error) {
-      console.log("Error occured while moving", error);
+      console.log("Error occurred while moving", error);
+      socket.emit("invalid_move", {
+        message: "Invalid Move",
+      });
+      return;
     }
+
     if (!result) {
       console.log("Illegal move attempted");
       socket.emit("invalid_move", {
@@ -129,33 +315,26 @@ export class Game {
 
     if (currentTurn === "w") {
       this.whiteTimeUsed += timeSpent;
+      this.whiteTimeRemaining = Math.max(
+        0,
+        this.maxTimePerPlayer - this.whiteTimeUsed
+      );
     } else {
       this.blackTimeUsed += timeSpent;
+      this.blackTimeRemaining = Math.max(
+        0,
+        this.maxTimePerPlayer - this.blackTimeUsed
+      );
     }
 
-    const reason = "timeout";
-
-    if (this.whiteTimeUsed > this.maxTimePerPlayer) {
-      const winner = "black";
-      this.clearTimer();
-      this.io.to(this.gameId).emit(GAME_OVER, {
-        move,
-        winner,
-        reason,
-      });
-
+    // Check if time ran out after the move
+    if (this.whiteTimeRemaining <= 0) {
+      this.endGameDueToTimeEnd("black");
       return;
     }
 
-    if (this.blackTimeUsed > this.maxTimePerPlayer) {
-      const winner = "white";
-      this.clearTimer();
-      this.io.to(this.gameId).emit(GAME_OVER, {
-        move,
-        winner,
-        reason,
-      });
-
+    if (this.blackTimeRemaining <= 0) {
+      this.endGameDueToTimeEnd("white");
       return;
     }
 
@@ -164,9 +343,12 @@ export class Game {
     this.io.to(this.gameId).emit(MOVE, {
       move,
       timeSpent,
+      whiteTimeRemaining: this.whiteTimeRemaining,
+      blackTimeRemaining: this.blackTimeRemaining,
     });
 
     if (this.board.isGameOver()) {
+      this.gameState = "checkmate";
       this.clearTimer();
       const winner = this.board.turn() === "w" ? "black" : "white";
       const reason = "checkmate";

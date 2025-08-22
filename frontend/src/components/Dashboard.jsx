@@ -13,13 +13,17 @@ export const Dashboard = ({
   canStartNewGame,
   onResign,
   onDraw,
+  onGoHome,
 }) => {
   const navigate = useNavigate();
 
+  // Ensure moveHistory is always an array
+  const safeMoveHistory = moveHistory || [];
+
   // Group moves into pairs: [whiteMove, blackMove]
   const movePairs = [];
-  for (let i = 0; i < moveHistory.length; i += 2) {
-    movePairs.push([moveHistory[i], moveHistory[i + 1]]);
+  for (let i = 0; i < safeMoveHistory.length; i += 2) {
+    movePairs.push([safeMoveHistory[i], safeMoveHistory[i + 1]]);
   }
 
   const handleResign = () => {
@@ -35,7 +39,11 @@ export const Dashboard = ({
   };
 
   const handleGoHome = () => {
-    navigate("/");
+    if (onGoHome) {
+      onGoHome();
+    } else {
+      navigate("/");
+    }
   };
 
   return (
@@ -71,13 +79,23 @@ export const Dashboard = ({
       <div className='flex justify-center gap-6 mb-4'>
         <button
           onClick={handleResign}
-          className='text-red-400 hover:text-red-300 text-sm font-medium transition-colors duration-200 cursor-pointer'
+          disabled={!isPlaying}
+          className={`text-sm font-medium transition-all duration-200 cursor-pointer px-3 py-1 rounded ${
+            isPlaying
+              ? "text-red-400 hover:text-red-300 hover:bg-red-400/10"
+              : "text-zinc-500 cursor-not-allowed"
+          }`}
         >
           Resign
         </button>
         <button
           onClick={handleDraw}
-          className='text-yellow-400 hover:text-yellow-300 text-sm font-medium transition-colors duration-200 cursor-pointer'
+          disabled={!isPlaying}
+          className={`text-sm font-medium transition-all duration-200 cursor-pointer px-3 py-1 rounded ${
+            isPlaying
+              ? "text-yellow-400 hover:text-yellow-300 hover:bg-yellow-400/10"
+              : "text-zinc-500 cursor-not-allowed"
+          }`}
         >
           Draw
         </button>
@@ -116,12 +134,13 @@ export const Dashboard = ({
                 <td className='p-2'>{idx + 1}</td>
                 <td className='p-2'>{pair[0]?.san || ""}</td>
                 <td className='p-2'>{pair[1]?.san || ""}</td>
-                <td className='p-2'>
+                <td className='p-2 text-xs'>
                   {pair[0]?.timeSpent
                     ? (pair[0].timeSpent / 1000).toFixed(1) + "s"
                     : ""}
+                  {pair[0]?.timeSpent && pair[1]?.timeSpent ? " | " : ""}
                   {pair[1]?.timeSpent
-                    ? " | " + (pair[1].timeSpent / 1000).toFixed(1) + "s"
+                    ? (pair[1].timeSpent / 1000).toFixed(1) + "s"
                     : ""}
                 </td>
               </tr>

@@ -1,5 +1,15 @@
 import { Game } from "./Game.js";
-import { CONNECTING, GAME_OVER, INIT_GAME, MOVE } from "./message.js";
+import {
+  CONNECTING,
+  GAME_OVER,
+  INIT_GAME,
+  MOVE,
+  RESIGN,
+  DRAW_OFFER,
+  DRAW_ACCEPTED,
+  DRAW_DECLINED,
+  RESIGN_ACCEPTED,
+} from "./message.js";
 import { nanoid } from "nanoid";
 
 export class GameManager {
@@ -19,7 +29,42 @@ export class GameManager {
       const game = this.games.get(gameId);
       if (game) {
         game.makeMove(socket, move);
-        this.io.to(gameId).emit("MOVE", move); // broadcast move to room
+      }
+    });
+
+    socket.on(RESIGN, (payload) => {
+      const { gameId } = payload;
+      const game = this.games.get(gameId);
+      if (game) {
+        // The Game class will handle the resign logic
+        // We just need to ensure the game exists
+      }
+    });
+
+    socket.on(DRAW_OFFER, (payload) => {
+      const { gameId } = payload;
+      const game = this.games.get(gameId);
+      if (game) {
+        // The Game class will handle the draw offer logic
+        // We just need to ensure the game exists
+      }
+    });
+
+    socket.on(DRAW_ACCEPTED, (payload) => {
+      const { gameId } = payload;
+      const game = this.games.get(gameId);
+      if (game) {
+        // The Game class will handle the draw acceptance logic
+        // We just need to ensure the game exists
+      }
+    });
+
+    socket.on(DRAW_DECLINED, (payload) => {
+      const { gameId } = payload;
+      const game = this.games.get(gameId);
+      if (game) {
+        // The Game class will handle the draw decline logic
+        // We just need to ensure the game exists
       }
     });
 
@@ -32,9 +77,17 @@ export class GameManager {
     // Check if the user is already in a game and clean up
     for (const [gameId, game] of this.games) {
       if (game.player1 === socket || game.player2 === socket) {
-        // Properly destroy the game and clear all resources
-        game.destroy();
-        this.games.delete(gameId);
+        try {
+          // Properly destroy the game and clear all resources
+          if (game && typeof game.destroy === "function") {
+            game.destroy();
+          }
+          this.games.delete(gameId);
+        } catch (error) {
+          console.log("Error destroying game:", error);
+          // Remove the game even if destroy fails
+          this.games.delete(gameId);
+        }
       }
     }
 
@@ -72,15 +125,23 @@ export class GameManager {
   removeUser(socket) {
     for (const [gameId, game] of this.games.entries()) {
       if (game.player1 === socket || game.player2 === socket) {
-        // Properly destroy the game and clear all resources
-        game.destroy();
+        try {
+          // Properly destroy the game and clear all resources
+          if (game && typeof game.destroy === "function") {
+            game.destroy();
+          }
 
-        const winnerColor = game.player1 === socket ? "black" : "white";
-        this.io.to(gameId).emit(GAME_OVER, {
-          winner: winnerColor,
-          reason: "disconnect",
-        });
-        this.games.delete(gameId);
+          const winnerColor = game.player1 === socket ? "black" : "white";
+          this.io.to(gameId).emit(GAME_OVER, {
+            winner: winnerColor,
+            reason: "disconnect",
+          });
+        } catch (error) {
+          console.log("Error during user removal:", error);
+        } finally {
+          // Always remove the game from the map
+          this.games.delete(gameId);
+        }
         break;
       }
     }

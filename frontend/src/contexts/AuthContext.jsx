@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import { apiService } from "../services/api";
+import { useSocket } from "../hooks/useSocket";
 
 const AuthContext = createContext();
 
@@ -17,6 +18,7 @@ const AuthProvider = ({ children }) => {
   const [error, setError] = useState(null);
   const [formError, setFormError] = useState(null);
   const [token, setToken] = useState(null);
+  const socket = useSocket();
 
  // Check if user is already logged in on app start
   useEffect(() => {
@@ -106,6 +108,7 @@ const AuthProvider = ({ children }) => {
     loading,
     error,
     formError,
+    socket,
     login,
     register,
     logout,

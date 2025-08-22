@@ -1,5 +1,10 @@
 export const INIT_GAME = "init_game";
-export const MOVE = "move"
+export const MOVE = "move";
 export const GAME_OVER = "game_over";
 export const CONNECTING = "connecting";
+export const RESIGN = "resign";
+export const DRAW_OFFER = "draw_offer";
+export const DRAW_ACCEPTED = "draw_accepted";
+export const DRAW_DECLINED = "draw_declined";
+export const RESIGN_ACCEPTED = "resign_accepted";
 export const DB_NAME = "Priyanshu1234";
