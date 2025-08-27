@@ -34,13 +34,7 @@ export class Game {
     this.player1.join(this.gameId);
     this.player2.join(this.gameId);
 
-    // Set up event listeners for resign and draw
-    if (this.player1 && this.player2) {
-      this.setupGameEvents();
-    } else {
-      console.error("Cannot set up game events: invalid players");
-    }
-
+    
     this.player1.emit(INIT_GAME, {
       color: "white",
       gameId: this.gameId,
@@ -112,70 +106,7 @@ export class Game {
     }
   }
 
-  setupGameEvents() {
-    // Only set up events if players are valid socket objects
-    if (
-      !this.player1 ||
-      !this.player2 ||
-      typeof this.player1.on !== "function" ||
-      typeof this.player2.on !== "function"
-    ) {
-      console.log("Cannot set up game events: invalid player sockets");
-      return;
-    }
-
-    // Handle resign
-    this.player1.on(RESIGN, () => {
-      if (this.gameState === "playing") {
-        this.handleResign(this.player1);
-      }
-    });
-
-    this.player2.on(RESIGN, () => {
-      if (this.gameState === "playing") {
-        this.handleResign(this.player2);
-      }
-    });
-
-    // Handle draw offers
-    this.player1.on(DRAW_OFFER, () => {
-      if (this.gameState === "playing") {
-        this.handleDrawOffer(this.player1);
-      }
-    });
-
-    this.player2.on(DRAW_OFFER, () => {
-      if (this.gameState === "playing") {
-        this.handleDrawOffer(this.player2);
-      }
-    });
-
-    // Handle draw responses
-    this.player1.on(DRAW_ACCEPTED, () => {
-      if (this.gameState === "playing") {
-        this.handleDrawAccepted(this.player1);
-      }
-    });
-
-    this.player2.on(DRAW_ACCEPTED, () => {
-      if (this.gameState === "playing") {
-        this.handleDrawAccepted(this.player2);
-      }
-    });
-
-    this.player1.on(DRAW_DECLINED, () => {
-      if (this.gameState === "playing") {
-        this.handleDrawDeclined(this.player1);
-      }
-    });
-
-    this.player2.on(DRAW_DECLINED, () => {
-      if (this.gameState === "playing") {
-        this.handleDrawDeclined(this.player2);
-      }
-    });
-  }
-
+ 
   handleResign(resigningPlayer) {
     if (this.gameState !== "playing") return;
 
@@ -203,7 +134,7 @@ export class Game {
       offeringPlayer === this.player1 ? this.player2 : this.player1;
     opponent.emit(DRAW_OFFER, {
       gameId: this.gameId,
-      fromPlayer: this.playersColors.get(offeringPlayer),
+      fromPlayer: this.playersColors.get(offeringPlayer)==='w'?"white":"black",
     });
   }
 
@@ -256,24 +187,6 @@ export class Game {
   // Destructor method to ensure cleanup
   destroy() {
     this.clearTimer();
-
-    // Remove event listeners safely
-    try {
-      if (this.player1 && typeof this.player1.off === "function") {
-        this.player1.off(RESIGN);
-        this.player1.off(DRAW_OFFER);
-        this.player1.off(DRAW_ACCEPTED);
-        this.player1.off(DRAW_DECLINED);
-      }
-      if (this.player2 && typeof this.player2.off === "function") {
-        this.player2.off(RESIGN);
-        this.player2.off(DRAW_OFFER);
-        this.player2.off(DRAW_ACCEPTED);
-        this.player2.off(DRAW_DECLINED);
-      }
-    } catch (error) {
-      console.log("Error during event listener cleanup:", error);
-    }
   }
 
   makeMove(socket, move) {

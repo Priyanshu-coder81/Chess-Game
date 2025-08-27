@@ -36,8 +36,7 @@ export class GameManager {
       const { gameId } = payload;
       const game = this.games.get(gameId);
       if (game) {
-        // The Game class will handle the resign logic
-        // We just need to ensure the game exists
+       game.handleResign(socket);
       }
     });
 
@@ -45,8 +44,7 @@ export class GameManager {
       const { gameId } = payload;
       const game = this.games.get(gameId);
       if (game) {
-        // The Game class will handle the draw offer logic
-        // We just need to ensure the game exists
+        game.handleDrawOffer(socket);
       }
     });
 
@@ -54,8 +52,7 @@ export class GameManager {
       const { gameId } = payload;
       const game = this.games.get(gameId);
       if (game) {
-        // The Game class will handle the draw acceptance logic
-        // We just need to ensure the game exists
+        game.handleDrawAccepted(socket);
       }
     });
 
@@ -63,8 +60,7 @@ export class GameManager {
       const { gameId } = payload;
       const game = this.games.get(gameId);
       if (game) {
-        // The Game class will handle the draw decline logic
-        // We just need to ensure the game exists
+        game.handleDrawDeclined(socket);
       }
     });
 

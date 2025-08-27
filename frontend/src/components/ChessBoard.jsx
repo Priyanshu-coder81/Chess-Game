@@ -30,12 +30,10 @@ const ChessBoard = ({
 
   useEffect(() => {
     if (!socket) return;
-    console.log("Socket is available in ChessBoard", socket);
 
    
 
     socket.on("time_update", ({whiteTime,blackTime})=> {
-      console.log('Received time_update:', whiteTime, blackTime);
       setWhiteTime(Math.max(0, whiteTime/1000 ));
       setBlackTime(Math.max(0, blackTime/1000 ));
     });

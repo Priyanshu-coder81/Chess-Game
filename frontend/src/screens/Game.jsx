@@ -18,9 +18,10 @@ import {
 } from "../constant.js";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import Navbar from "../components/Navbar";
+import DrawOfferNotification from "../components/DrawOfferNotification.jsx";
 
 const Game = () => {
-  const { user,socket} = useAuth();
+  const { user, socket } = useAuth();
   const chessRef = useRef(new Chess());
   const gameIdRef = useRef(null);
 
@@ -48,6 +49,10 @@ const Game = () => {
     username: "Opponent",
     avatar: "/white_400.png",
   });
+
+  // New state for draw offer modal
+  const [showDrawOfferModal, setShowDrawOfferModal] = useState(false);
+  const [currentDrawOffer, setCurrentDrawOffer] = useState(null);
 
   const handleNewGame = () => {
     if (started && !gameOver) {
@@ -236,18 +241,10 @@ const Game = () => {
 
     socket.on(DRAW_OFFER, ({ gameId, fromPlayer }) => {
       console.log("Draw offer received:", { gameId, fromPlayer });
+      console.log("Draw offer received:", { gameId, fromPlayer });
       if (gameId === gameIdRef.current && fromPlayer !== color) {
-        // Show draw offer dialog
-        const acceptDraw = window.confirm(
-          "Your opponent has offered a draw. Accept?"
-        );
-        if (acceptDraw) {
-          console.log("Draw offer accepted");
-          socket.emit(DRAW_ACCEPTED, { gameId });
-        } else {
-          console.log("Draw offer declined");
-          socket.emit(DRAW_DECLINED, { gameId });
-        }
+        setCurrentDrawOffer({ gameId, fromPlayer });
+        setShowDrawOfferModal(true);
       }
     });
 
@@ -290,6 +287,14 @@ const Game = () => {
   return (
     <div className='min-h-screen  bg-neutral-800 text-white'>
       <Navbar />
+      <DrawOfferNotification
+        socket={socket}
+        gameId={gameIdRef.current}
+        showDrawOfferModal={showDrawOfferModal}
+        currentDrawOffer={currentDrawOffer}
+        setShowDrawOfferModal={setShowDrawOfferModal}
+        setCurrentDrawOffer={setCurrentDrawOffer}
+      />
 
       <div className={` flex justify-center items-center`}>
         {gameOver && showGameOver && (
