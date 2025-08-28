@@ -350,12 +350,14 @@ const Game = () => {
 
             <div className='flex justify-center items-center w-[95%] m-auto md:col-span-2'>
               {!started ? (
-                <Button
+                !connect? 
+               ( <Button
                   onClick={handleOnClick}
+                  connect = {connect}
                   className='w-full md:w-auto min-w-3xs'
                 >
                   Start Game
-                </Button>
+                </Button>) : <Button connect = {connect} >Loading... </Button>
               ) : (
                 <Dashboard
                   color={color}
