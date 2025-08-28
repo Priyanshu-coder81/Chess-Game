@@ -36,7 +36,7 @@ export class GameManager {
       const { gameId } = payload;
       const game = this.games.get(gameId);
       if (game) {
-       game.handleResign(socket);
+        game.handleResign(socket);
       }
     });
 
@@ -127,17 +127,20 @@ export class GameManager {
             game.destroy();
           }
 
-          const winnerColor = game.player1 === socket ? "black" : "white";
-          this.io.to(gameId).emit(GAME_OVER, {
-            winner: winnerColor,
-            reason: "disconnect",
-          });
+          if (game.gameState === "playing") {
+            const winnerColor = game.player1 === socket ? "black" : "white";
+            this.io.to(gameId).emit(GAME_OVER, {
+              winner: winnerColor,
+              reason: "disconnect",
+            });
+          }
         } catch (error) {
           console.log("Error during user removal:", error);
         } finally {
           // Always remove the game from the map
           this.games.delete(gameId);
         }
+
         break;
       }
     }

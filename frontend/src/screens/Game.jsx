@@ -19,6 +19,7 @@ import {
 import { useAuth } from "../contexts/AuthContext.jsx";
 import Navbar from "../components/Navbar";
 import DrawOfferNotification from "../components/DrawOfferNotification.jsx";
+import ConfirmationSidePopup from "../components/ConfirmationSidePopup.jsx";
 
 const Game = () => {
   const { user, socket } = useAuth();
@@ -54,6 +55,9 @@ const Game = () => {
   const [showDrawOfferModal, setShowDrawOfferModal] = useState(false);
   const [currentDrawOffer, setCurrentDrawOffer] = useState(null);
 
+  const [showResignConfirmModal, setShowResignConfirmModal] = useState(false);
+  const [showDrawConfirmModal, setShowDrawConfirmModal] = useState(false);
+
   const handleNewGame = () => {
     if (started && !gameOver) {
       const confirmNewGame = window.confirm(
@@ -61,7 +65,7 @@ const Game = () => {
       );
       if (!confirmNewGame) return;
     }
-
+    socket.emit(RESIGN, { gameId: gameIdRef.current });
     // Reset all game state
     setGameOver(false);
     setWinner(null);
@@ -90,34 +94,35 @@ const Game = () => {
   };
 
   const handleResign = () => {
-    if (socket && gameIdRef.current && started && !gameOver) {
-      const confirmResign = window.confirm(
-        "Are you sure you want to resign? This will end the game immediately."
-      );
-      if (!confirmResign) return;
+    setShowResignConfirmModal(true);
 
-      // Emit resign event
-      socket.emit(RESIGN, { gameId: gameIdRef.current });
+  }; 
 
-      // Show immediate feedback
-      console.log("Resignation sent to server");
-    }
-  };
+  const handleCancelResign = () =>{
+    setShowResignConfirmModal(false);
+  }
+  const handleConfirmResign = () => {
+    socket.emit(RESIGN, { gameId: gameIdRef.current });
+    
+    setShowResignConfirmModal(false);
+    console.log("Resignation sent to server");
+  }
 
   const handleDraw = () => {
-    if (socket && gameIdRef.current && started && !gameOver) {
-      const confirmDraw = window.confirm(
-        "Are you sure you want to offer a draw to your opponent?"
-      );
-      if (!confirmDraw) return;
-
-      // Emit draw offer event
-      socket.emit(DRAW_OFFER, { gameId: gameIdRef.current });
-
-      // Show notification that draw offer was sent
-      console.log("Draw offer sent to opponent");
-    }
+   setShowDrawConfirmModal(true);
+   
   };
+
+  const handleCancelDraw = () => {
+    setShowDrawConfirmModal(false);
+  }
+
+  const handleConfirmDraw = () => {
+    
+    socket.emit(DRAW_OFFER, { gameId: gameIdRef.current });
+    setShowDrawConfirmModal(false);
+  }
+
 
   const handleGoHome = () => {
     if (started && !gameOver) {
@@ -197,6 +202,8 @@ const Game = () => {
       setWinner(winner);
       setGameOverReason(reason);
       setShowGameOver(true);
+      setShowDrawOfferModal(false);
+      setCurrentDrawOffer(false);
       console.log("Game End", { winner, reason });
     });
 
@@ -287,14 +294,7 @@ const Game = () => {
   return (
     <div className='min-h-screen  bg-neutral-800 text-white'>
       <Navbar />
-      <DrawOfferNotification
-        socket={socket}
-        gameId={gameIdRef.current}
-        showDrawOfferModal={showDrawOfferModal}
-        currentDrawOffer={currentDrawOffer}
-        setShowDrawOfferModal={setShowDrawOfferModal}
-        setCurrentDrawOffer={setCurrentDrawOffer}
-      />
+     
 
       <div className={` flex justify-center items-center`}>
         {gameOver && showGameOver && (
@@ -308,6 +308,28 @@ const Game = () => {
             onClose={handleCloseGameOver}
           />
         )}
+         <DrawOfferNotification
+        socket={socket}
+        gameId={gameIdRef.current}
+        showDrawOfferModal={showDrawOfferModal}
+        currentDrawOffer={currentDrawOffer}
+        setShowDrawOfferModal={setShowDrawOfferModal}
+        setCurrentDrawOffer={setCurrentDrawOffer}
+      />
+       <ConfirmationSidePopup
+           showModal={showResignConfirmModal}
+     title="Confirm Resignation"
+         message="Are you sure you want to resign? This will end the game immediately."
+    onClose={handleCancelResign}
+      onConfirm={handleConfirmResign}
+    />
+   <ConfirmationSidePopup
+       showModal={showDrawConfirmModal}
+    title="Confirm Draw Offer"
+        message="Are you sure you want to offer a draw to your opponent?"
+         onClose={handleCancelDraw}
+          onConfirm={handleConfirmDraw}
+        />
 
         <div className={`pt-8 w-full max-w-5xl mx-auto`}>
           <div className='flex flex-col w-full gap-8 md:grid md:grid-cols-6 md:gap-4'>
