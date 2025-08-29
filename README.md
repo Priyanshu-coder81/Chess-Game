@@ -16,7 +16,6 @@ A real-time online chess game built with modern web technologies. Players can lo
 
 ## 🚧 Work in Progress
 
-- Hide the **Play button** while searching (or replace it with a **Cancel button**).  
 - Store **moves in Redis** for persistence and potential replay.  
 - Add **Guest IDs** for quick play without signup.  
 - Implement a **Recovery Mechanism** so players can reconnect after refresh or disconnection.
