@@ -9,6 +9,9 @@ import {
   DRAW_DECLINED,
   RESIGN_ACCEPTED,
 } from "./message.js";
+import {redisClient} from './db/redis.js';
+import {Game as GameModel} from "./models/GameModel.models.js";
+import { timingSafeEqual } from "crypto";
 
 export class Game {
   constructor(player1, player2, gameId, io) {
@@ -25,7 +28,7 @@ export class Game {
     this.playersColors.set(player2, "b");
 
     this.currentTurnStartTime = new Date();
-    this.maxTimePerPlayer = 20000; // 20 seconds
+    this.maxTimePerPlayer = 120000; // 120 seconds
     this.whiteTimeUsed = 0;
     this.blackTimeUsed = 0;
     this.whiteTimeRemaining = this.maxTimePerPlayer;
@@ -34,7 +37,34 @@ export class Game {
     this.player1.join(this.gameId);
     this.player2.join(this.gameId);
 
+
+   
+  }
+
+  async init() {
     
+    await redisClient.set(
+      `game:${this.gameId}:initial_state`,
+      JSON.stringify({
+        gameId: this.gameId,
+        player1Id: this.player1.user._id,
+        player2Id: this.player2.user._id,
+        initialFen: this.board.fen(),
+        maxTimePerPlayer: this.maxTimePerPlayer,
+      })
+    );
+    await redisClient.set(`game:${this.gameId}:current_fen`, this.board.fen());
+
+    
+    this.gameInstance = await GameModel.create({
+      gameId: this.gameId,
+      whitePlayer: this.player1.user._id,
+      blackPlayer: this.player2.user._id,
+      status: "playing",
+      startedAt:this.startTime,
+    },)
+
+     
     this.player1.emit(INIT_GAME, {
       color: "white",
       gameId: this.gameId,
@@ -64,6 +94,7 @@ export class Game {
         },
       },
     });
+
 
     this.timeInterval = setInterval(() => {
       if (this.gameState !== "playing") return;
@@ -99,30 +130,50 @@ export class Game {
         });
       
         
-    }, 1000); // Update every 100ms for smoother countdown
+    }, 100); // Update every 100ms for smoother countdown
     // Ensure the timer is properly initialized
     if (!this.timeInterval) {
       console.error("Failed to initialize game timer");
     }
   }
 
+  async updateMongoDBGameEnd(status, result , winnerId = null) {
+    if(this.gameInstance) {
+      await GameModel.findByIdAndUpdate(this.gameInstance._id, {
+        status: status,
+        result: result,
+        winner: winnerId,
+        endedAt: new Date(),
+      })
+    }
+  }
  
-  handleResign(resigningPlayer) {
+  async handleResign(resigningPlayer) {
     if (this.gameState !== "playing") return;
 
     this.gameState = "resigned";
-    const winner =
-      this.playersColors.get(resigningPlayer) === "w" ? "black" : "white";
+    const winnerId =
+      this.playersColors.get(resigningPlayer) === "w" ? this.player2.user._id : this.player1.user._id;
+
+      const result =
+      this.playersColors.get(resigningPlayer) === 'w' ? 'black' : 'white';
 
     this.clearTimer();
+
+    await redisClient.set(`game:${this.gameId}:status`, this.gameState);
+
+    await this.updateMongoDBGameEnd(this.gameState,result,winnerId);
+
+
+
     this.io.to(this.gameId).emit(RESIGN_ACCEPTED, {
       gameId: this.gameId,
-      winner,
+      winner:result,
       reason: "resignation",
     });
 
     this.io.to(this.gameId).emit(GAME_OVER, {
-      winner,
+      winner:result,
       reason: "resignation",
     });
   }
@@ -138,11 +189,18 @@ export class Game {
     });
   }
 
-  handleDrawAccepted(acceptingPlayer) {
+  async handleDrawAccepted(acceptingPlayer) {
     if (this.gameState !== "playing") return;
 
     this.gameState = "draw";
     this.clearTimer();
+    const result = "draw";
+
+     // Update Redis status
+     await redisClient.set(`game:${this.gameId}:status`, this.gameState);
+
+     // Update MongoDB Game document immediately (no winner for a draw)
+     await this.updateMongoDBGameEnd(this.gameState, result, null);
 
     this.io.to(this.gameId).emit(DRAW_ACCEPTED, {
       gameId: this.gameId,
@@ -164,11 +222,20 @@ export class Game {
     });
   }
 
-  endGameDueToTimeEnd(winner) {
+   async endGameDueToTimeEnd(winner) {
     if (this.gameState !== "playing") return;
 
     this.gameState = "timeout";
     this.clearTimer();
+    const result = winner;
+    const winnerId = winner === 'white'? this.player1.user._id : this.player2.user._id;
+
+      // Update Redis status
+      await redisClient.set(`game:${this.gameId}:status`, this.gameState);
+
+      // Update MongoDB Game document immediately
+      await this.updateMongoDBGameEnd(this.gameState, result, winnerId);
+
     const reason = "timeout";
     this.io.to(this.gameId).emit(GAME_OVER, {
       winner,
@@ -185,11 +252,15 @@ export class Game {
   }
 
   // Destructor method to ensure cleanup
-  destroy() {
+  async destroy() {
     this.clearTimer();
+    if (this.gameInstance && this.gameInstance.isModified()) {
+      await this.gameInstance.save();
+  }
+    
   }
 
-  makeMove(socket, move) {
+ async makeMove(socket, move) {
     if (this.gameState !== "playing") return;
 
     const currentTurn = this.board.turn();
@@ -215,6 +286,20 @@ export class Game {
       return;
     }
 
+    const now = new Date();
+
+    const timeSpent = now - this.currentTurnStartTime;
+
+    const fullMoveData = {
+      san: result.san,
+      color : result.color === 'w'? "white" : "black",
+      timeSpent: timeSpent,
+      fen: this.board.fen(),
+    }
+    await redisClient.rPush(`game:${this.gameId}:moves_queue`, JSON.stringify(fullMoveData));
+    await redisClient.set(`game:${this.gameId}:current_fen`,this.board.fen());
+
+
     if (!result) {
       console.log("Illegal move attempted");
       socket.emit("invalid_move", {
@@ -222,9 +307,6 @@ export class Game {
       });
       return;
     }
-
-    const now = new Date();
-    const timeSpent = now - this.currentTurnStartTime;
 
     if (currentTurn === "w") {
       this.whiteTimeUsed += timeSpent;
@@ -263,13 +345,20 @@ export class Game {
     if (this.board.isGameOver()) {
       this.gameState = "checkmate";
       this.clearTimer();
-      const winner = this.board.turn() === "w" ? "black" : "white";
+      const result = this.board.turn() === "w" ? "black" : "white";
       const reason = "checkmate";
 
+      const winnerId = result === 'white'? this.player1.user._id : this.player2.user._id;
+      
+      await redisClient.set(`game:${this.gameId}:status`,this.gameState);
+
+      await this.updateMongoDBGameEnd(this.gameState,result,winnerId);
+
       this.io.to(this.gameId).emit(GAME_OVER, {
-        winner,
+        winner:result,
         reason,
       });
     }
+
   }
 }

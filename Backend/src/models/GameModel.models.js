@@ -25,6 +25,10 @@ const moveSchema = new mongoose.Schema(
 
 const gameSchema = new mongoose.Schema(
   {
+    gameId: {
+      type: String,
+      required: true,
+    },
     whitePlayer: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -44,6 +48,18 @@ const gameSchema = new mongoose.Schema(
     winner: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
+    },
+    status: {
+      type: String,
+      enum: [
+        "playing",
+        "resigned",
+        "draw",
+        "checkmate",
+        "timeout",
+        "completed",
+      ],
+      default: "playing",
     },
     startedAt: {
       type: Date,

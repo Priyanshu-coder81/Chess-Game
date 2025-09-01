@@ -112,6 +112,7 @@ export class GameManager {
       player2.join(gameId);
 
       const game = new Game(player1, player2, gameId, this.io);
+      game.init();
       this.games.set(gameId, game);
     } else {
       socket.emit(CONNECTING);

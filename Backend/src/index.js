@@ -9,6 +9,7 @@ import connectDB from "./db/index.js";
 import userRoutes from "./routes/user.routes.js";
 import { verify } from "crypto";
 import { verifyAccessToken } from "./utils/verifyAccessToken.js";
+import { startMovePersistenceWorker } from './utils/movePersistenceWorker.js';
 
 dotenv.config({ path: "./.env" });
 
@@ -55,7 +56,9 @@ connectDB()
     console.log("Database Connected");
     server.listen(port, () => {
       console.log(`Server is running on port ${port}`);
+      startMovePersistenceWorker()
     });
+    
   })
   .catch((err) => {
     console.log("Connection Failed: ", err);
