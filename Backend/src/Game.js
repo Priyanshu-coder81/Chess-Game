@@ -137,6 +137,14 @@ export class Game {
     }
   }
 
+  async clearGameDataFromRedis() {
+    const keysToDelete = [`game:${this.gameId}:initial_status`,`game:${this.gameId}:current_fen`,`game:${this.gameId}:status`,`game:${this.gameId}:moves_queue`];
+  
+    await redisClient.del(keysToDelete);
+  
+  }
+  
+
   async updateMongoDBGameEnd(status, result , winnerId = null) {
     if(this.gameInstance) {
       await GameModel.findByIdAndUpdate(this.gameInstance._id, {
@@ -164,6 +172,8 @@ export class Game {
 
     await this.updateMongoDBGameEnd(this.gameState,result,winnerId);
 
+    await this.clearGameDataFromRedis();
+
 
 
     this.io.to(this.gameId).emit(RESIGN_ACCEPTED, {
@@ -177,6 +187,8 @@ export class Game {
       reason: "resignation",
     });
   }
+
+  
 
   handleDrawOffer(offeringPlayer) {
     if (this.gameState !== "playing") return;
@@ -201,6 +213,8 @@ export class Game {
 
      // Update MongoDB Game document immediately (no winner for a draw)
      await this.updateMongoDBGameEnd(this.gameState, result, null);
+     
+    await this.clearGameDataFromRedis();
 
     this.io.to(this.gameId).emit(DRAW_ACCEPTED, {
       gameId: this.gameId,
@@ -354,11 +368,14 @@ export class Game {
 
       await this.updateMongoDBGameEnd(this.gameState,result,winnerId);
 
+      await this.clearGameDataFromRedis();
+      
       this.io.to(this.gameId).emit(GAME_OVER, {
         winner:result,
         reason,
       });
     }
-
   }
+  
 }
+
