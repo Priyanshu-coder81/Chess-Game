@@ -8,3 +8,6 @@ export const DRAW_ACCEPTED = "draw_accepted";
 export const DRAW_DECLINED = "draw_declined";
 export const RESIGN_ACCEPTED = "resign_accepted";
 export const DB_NAME = "Priyanshu1234";
+export const RECOVER_GAME = "recover_game";
+export const GAME_RECOVERED = "game_recovered";
+export const RECOVERY_FAILED = "recovery_failed";

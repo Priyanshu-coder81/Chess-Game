@@ -143,6 +143,10 @@ export const Dashboard = ({
                     ? (pair[1].timeSpent / 1000).toFixed(1) + "s"
                     : ""}
                 </td>
+                {/* Debug info */}
+                <td className='p-2 text-xs text-gray-500 hidden'>
+                  MS: {pair[0]?.timeSpent || ""} | {pair[1]?.timeSpent || ""}
+                </td>
               </tr>
             ))}
           </tbody>

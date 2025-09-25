@@ -15,6 +15,10 @@ import {
   DRAW_ACCEPTED,
   DRAW_DECLINED,
   RESIGN_ACCEPTED,
+  CONNECT,
+  GAME_RECOVERED,
+  RECOVER_GAME,
+  RECOVERY_FAILED,
 } from "../constant.js";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import Navbar from "../components/Navbar";
@@ -142,6 +146,15 @@ const Game = () => {
   };
 
   const handleOnClick = () => {
+    if (!socket?.connected) {
+      console.log("Socket not connected, cannot start game");
+      return;
+    }
+    if (!user) {
+      console.log("No user data, cannot start game");
+      return;
+    }
+    console.log("Requesting game initialization as:", user.username);
     socket.emit(INIT_GAME);
   };
 
@@ -159,14 +172,43 @@ const Game = () => {
   }, [user]);
 
   useEffect(() => {
-    if (!socket) return;
-
-    socket.on("connect", () => {
-      console.log("Socket connected with ID:", socket.id);
+    if (!socket) {
+      console.log("Socket not initialized yet");
+      return;
+    }
+    console.log("Socket initialization in Game component:", {
+      connected: socket.connected,
+      id: socket.id,
+      authenticated: !!user
     });
+    
+    // Listen for authentication events
+    socket.on("auth_success", (data) => {
+      console.log("Authentication successful:", data);
+    });
+
+    socket.on("auth_error", (data) => {
+      console.error("Authentication error:", data);
+    });
+    
+ /*    const attemptRecovery = () => {
+      const storedGameId = localStorage.getItem("chess_game_id");
+      if (storedGameId) {
+        console.log("Attempting to recover game:", storedGameId);
+        socket.emit(RECOVER_GAME, { gameId: storedGameId });
+      }
+      return;
+    }; */
+
+   /*  socket.on("connect", () => {
+      console.log("Socket connected successfully", socket.id);
+      attemptRecovery();
+    }); */
+
 
     socket.on("connect_error", (error) => {
       console.error("Socket connection error:", error);
+      console.error("Socket auth token:", localStorage.getItem("token"));
     });
 
     socket.on("disconnect", (reason) => {
@@ -174,18 +216,79 @@ const Game = () => {
     });
 
     socket.on(CONNECTING, () => {
-      console.log("Connecting to game...");
+      console.log("Matchmaking in progress... Socket ID:", socket.id);
+      console.log("Current user: line 220",user?.username);
       setConnect(true);
     });
 
-    socket.on(INIT_GAME, ({ gameId, color, players }) => {
+ /*    socket.on(GAME_RECOVERED, (data) => {
+      console.log("Game recovered:", data);
+      chessRef.current.load(data.fen);
+      setBoard(chessRef.current.board());
+      setColor(data.color);
+      setPlayersData(data.players.player);
+      setOpponentData(data.players.opponent);
+      setStarted(true);
+      setMoveHistory(data.moves || []);
+      setTurn(chessRef.current.turn() === "w" ? "white" : "black");
+      setGameOver(data.status !== "playing");
+      gameIdRef.current = data.gameId;
       setConnect(false);
+    }); */
 
-      // Create a proper deep copy of the board for React state update
+ /*    socket.on(RECOVERY_FAILED, (data) => {
+      console.log("Game recovery failed:", data);
+      localStorage.removeItem("chess_game_id");
+    }); */
+
+
+    socket.on(INIT_GAME, (data) => {
+      console.log("Received INIT_GAME event with full data:", data);
+      const { gameId, color, players, initialWhiteTime, initialBlackTime } = data;
+      
+      if (!gameId || !color || !players) {
+        console.error("Invalid INIT_GAME data received:", data);
+        return;
+      }
+      
+      setConnect(false);
+      localStorage.setItem("chess_game_id", gameId);
+      gameIdRef.current = gameId;
+
+      // Reset and initialize the chess board
+      chessRef.current = new Chess();
       const newBoard = chessRef.current
         .board()
         .map((row) => row.map((square) => (square ? { ...square } : null)));
+      
+      console.log("Setting game state:", {
+        color,
+        players,
+        gameId,
+        time: { white: initialWhiteTime, black: initialBlackTime }
+      });
+
       setBoard(newBoard);
+      setStarted(true);
+      setColor(color);
+      setTurn("white"); // Chess always starts with white
+      setGameOver(false);
+      setMoveHistory([]);
+
+      if (players) {
+        if (players.player) {
+          setPlayersData({
+            username: players.player.username,
+            avatar: players.player.avatar || "/white_400.png"
+          });
+        }
+        if (players.opponent) {
+          setOpponentData({
+            username: players.opponent.username,
+            avatar: players.opponent.avatar || "/white_400.png"
+          });
+        }
+      }
 
       setStarted(true);
       setColor(color);
@@ -198,6 +301,7 @@ const Game = () => {
     });
 
     socket.on(GAME_OVER, ({ winner, reason }) => {
+       localStorage.removeItem("chess_game_id");
       setGameOver(true);
       setWinner(winner);
       setGameOverReason(reason);
@@ -209,7 +313,7 @@ const Game = () => {
 
     socket.on(
       MOVE,
-      ({ move, timeSpent, whiteTimeRemaining, blackTimeRemaining }) => {
+      ({ move, timeSpent }) => {
         const result = chessRef.current.move(move);
         if (result) {
           // Create a proper deep copy of the board for React state update
@@ -273,7 +377,12 @@ const Game = () => {
     });
 
     return () => {
+      if (!socket) return;
+      
       // Clean up all socket event listeners
+      socket.off("connect");
+      socket.off("auth_success");
+      socket.off("auth_error");
       socket.off(CONNECTING);
       socket.off(INIT_GAME);
       socket.off(MOVE);
@@ -284,6 +393,8 @@ const Game = () => {
       socket.off(DRAW_DECLINED);
       socket.off("connect_error");
       socket.off("disconnect");
+      socket.off(RECOVERY_FAILED);
+      socket.off(GAME_RECOVERED);
     };
   }, [socket, color]);
 

@@ -51,14 +51,6 @@ const gameSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: [
-        "playing",
-        "resigned",
-        "draw",
-        "checkmate",
-        "timeout",
-        "completed",
-      ],
       default: "playing",
     },
     startedAt: {

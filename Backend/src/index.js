@@ -7,31 +7,27 @@ import cookieParser from "cookie-parser";
 import { GameManager } from "./GameManager.js";
 import connectDB from "./db/index.js";
 import userRoutes from "./routes/user.routes.js";
-import { verify } from "crypto";
 import { verifyAccessToken } from "./utils/verifyAccessToken.js";
-import { startMovePersistenceWorker } from './utils/movePersistenceWorker.js';
 
 dotenv.config({ path: "./.env" });
 
 const port = process.env.PORT || 8000;
-
 const app = express();
-
 const server = http.createServer(app);
+
+// CORS configuration for Express
+app.use(
+  cors({
+    origin: process.env.CORS_ORIGIN || "http://localhost:5173",
+    credentials: true,
+  })
+);
 
 // Middleware
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 app.use(express.static("public"));
 app.use(cookieParser());
-
-// CORS configuration
-app.use(
-  cors({
-    origin: process.env.CORS_ORIGIN || "http://localhost:5173/", // Frontend URL
-    credentials: true,
-  })
-);
 
 // Routes
 app.use("/api/v1/users", userRoutes);
@@ -41,50 +37,61 @@ app.get("/api/v1/health", (req, res) => {
   res.status(200).json({ message: "Server is running" });
 });
 
-// Todo adjust CORS
+// Configure Socket.IO with CORS
 const io = new Server(server, {
   cors: {
     origin: process.env.CORS_ORIGIN || "http://localhost:5173",
     credentials: true,
+    methods: ["GET", "POST"]
   },
+  transports: ["websocket", "polling"],
+  pingTimeout: 60000,
+  pingInterval: 25000,
 });
 
-const gameManger = new GameManager(io);
+const gameManager = new GameManager(io);
 
+// Socket.IO connection handling
+io.on("connection", async (socket) => {
+  console.log("New socket connection attempt", socket.id);
+  const token = socket.handshake.auth.token;
+  
+  if (typeof token === "string" && token.trim() && token !== "undefined" && token !== "null") {
+    try {
+      const user = await verifyAccessToken(token);
+      if (user) {
+        socket.user = user;
+        console.log(`Authenticated user connected: ${user.username} (Socket ID: ${socket.id})`);
+      }
+    } catch (err) {
+      console.error("Socket authentication failed:", err);
+      socket.emit("auth_error", { message: "Authentication failed" });
+      socket.disconnect();
+      return;
+    }
+  } else {
+    console.log("No valid token provided");
+    socket.emit("auth_error", { message: "No valid token provided" });
+    socket.disconnect();
+    return;
+  }
+  
+  // Only add authenticated users
+  if (socket.user) {
+    gameManager.addUser(socket);
+    socket.emit("auth_success", { username: socket.user.username });
+  }
+});
+
+// Connect to database and start server
 connectDB()
   .then(() => {
     console.log("Database Connected");
     server.listen(port, () => {
       console.log(`Server is running on port ${port}`);
-      startMovePersistenceWorker()
     });
-    
   })
   .catch((err) => {
-    console.log("Connection Failed: ", err);
+    console.error("Database Connection Failed:", err);
     process.exit(1);
   });
-
-io.on("connection", async (socket) => {
-  const token = socket.handshake.auth.token;
-  if (typeof token === "string" && token.trim() && token !== "undefined" && token !== "null") {
-
-    let user = null; 
-    try {
-       user = await verifyAccessToken(token);
-    }
-    catch(err) {
-      socket.disconnect();
-      return;
-    }
-    if(user) {
-      socket.user = user;
-    }
-  }/* else {
-    // Guest connection
-    const guestId = generateGuestId(); // your custom guest logic
-    socket.user = { username: `Guest-${guestId}`, avatar: "default.png" };
-    console.log("Guest connected:", socket.user.username);
-  } */
-  gameManger.addUser(socket);
-});

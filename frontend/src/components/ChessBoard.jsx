@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { MOVE } from "../constant";
+import { INIT_GAME, MOVE } from "../constant";
 import { ProfileCard } from "./ProfileCard.jsx";
 import { useAuth } from "../contexts/AuthContext.jsx";
 
@@ -22,20 +22,20 @@ const ChessBoard = ({
 
   const timerRef = useRef(null);
 
-  // Reset timer when game resets
+  // Initialize timers from props and handle game reset
   useEffect(() => {
-    setWhiteTime(20);
-    setBlackTime(20);
+
+      setWhiteTime(20);
+      setBlackTime(20);
+
   }, [gameResetTrigger]);
 
   useEffect(() => {
     if (!socket) return;
 
-   
-
-    socket.on("time_update", ({whiteTime,blackTime})=> {
-      setWhiteTime(Math.max(0, whiteTime/1000 ));
-      setBlackTime(Math.max(0, blackTime/1000 ));
+   socket.on("time_update", (clocks) => {
+      setWhiteTime(Math.max(0, clocks.white/1000));
+      setBlackTime(Math.max(0, clocks.black/1000));
     });
 
     return () => {
