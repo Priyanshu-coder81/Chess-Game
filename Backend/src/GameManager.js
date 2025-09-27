@@ -29,6 +29,7 @@ export class GameManager {
 
     // Game recovery
     socket.on(RECOVER_GAME, async ({ gameId }) => {
+      console.log(`Recovery request from user: ${socket.user?.username} (${socket.id}) for gameId: ${gameId}`);
       try {
         const game = this.games.get(gameId);
         if (!game) {
@@ -118,6 +119,8 @@ export class GameManager {
         socket.emit(RECOVERY_FAILED, { reason: "User data not found" });
         return;
       }
+
+
 
       // Clean up any existing games for this socket
       await this.cleanupExistingGames(socket);

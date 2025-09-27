@@ -36,6 +36,7 @@ const Game = () => {
     return chess.board();
   });
 
+  const [authenticated, setAuthenticated] = useState(false);
   const [started, setStarted] = useState(false);
   const [color, setColor] = useState(null);
   const [connect, setConnect] = useState(false);
@@ -161,6 +162,12 @@ const Game = () => {
   const handleCloseGameOver = () => {
     setShowGameOver(false);
   };
+useEffect(() => {
+  if (socket && socket.connected && authenticated) {
+    // Only attempt recovery when both are true
+    attemptRecovery();
+  }
+}, [socket, authenticated]);
 
   useEffect(() => {
     if (user) {
@@ -170,6 +177,17 @@ const Game = () => {
       });
     }
   }, [user]);
+  
+    const attemptRecovery = () => {
+      console.log("Finding stored game ID for recovery...");
+      const storedGameId = localStorage.getItem("chess_game_id");
+      if (storedGameId) {
+        console.log("Attempting to recover game:", storedGameId);
+        console.log(Date.now());
+        socket.emit(RECOVER_GAME, { gameId: storedGameId });
+      }
+      return;
+    };
 
   useEffect(() => {
     if (!socket) {
@@ -185,25 +203,19 @@ const Game = () => {
     // Listen for authentication events
     socket.on("auth_success", (data) => {
       console.log("Authentication successful:", data);
+      setAuthenticated(true);
     });
 
     socket.on("auth_error", (data) => {
       console.error("Authentication error:", data);
+      setAuthenticated(false);
     });
     
- /*    const attemptRecovery = () => {
-      const storedGameId = localStorage.getItem("chess_game_id");
-      if (storedGameId) {
-        console.log("Attempting to recover game:", storedGameId);
-        socket.emit(RECOVER_GAME, { gameId: storedGameId });
-      }
-      return;
-    }; */
 
-   /*  socket.on("connect", () => {
+  socket.on("connect", () => {
       console.log("Socket connected successfully", socket.id);
-      attemptRecovery();
-    }); */
+    
+    }); 
 
 
     socket.on("connect_error", (error) => {
@@ -221,7 +233,7 @@ const Game = () => {
       setConnect(true);
     });
 
- /*    socket.on(GAME_RECOVERED, (data) => {
+    socket.on(GAME_RECOVERED, (data) => {
       console.log("Game recovered:", data);
       chessRef.current.load(data.fen);
       setBoard(chessRef.current.board());
@@ -234,12 +246,12 @@ const Game = () => {
       setGameOver(data.status !== "playing");
       gameIdRef.current = data.gameId;
       setConnect(false);
-    }); */
+    });
 
- /*    socket.on(RECOVERY_FAILED, (data) => {
+    socket.on(RECOVERY_FAILED, (data) => {
       console.log("Game recovery failed:", data);
       localStorage.removeItem("chess_game_id");
-    }); */
+    });
 
 
     socket.on(INIT_GAME, (data) => {

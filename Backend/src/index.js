@@ -55,6 +55,7 @@ const gameManager = new GameManager(io);
 io.on("connection", async (socket) => {
   console.log("New socket connection attempt", socket.id);
   const token = socket.handshake.auth.token;
+ 
   
   if (typeof token === "string" && token.trim() && token !== "undefined" && token !== "null") {
     try {
@@ -79,7 +80,11 @@ io.on("connection", async (socket) => {
   // Only add authenticated users
   if (socket.user) {
     gameManager.addUser(socket);
+    
     socket.emit("auth_success", { username: socket.user.username });
+  }
+  else {
+    console.log("no socket.user object ");
   }
 });
 
