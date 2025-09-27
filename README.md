@@ -10,15 +10,15 @@ A real-time online chess game built with modern web technologies. Players can lo
 - **Multiplayer Gameplay**: Play chess in real time with another player.  
 - **Move Validation & Timer**: Enforces proper chess rules with a working chess clock that switches turns automatically.  
 - **Game Controls**: Players can **resign mid-game** or **offer a draw**.  
-- **Complete Game Flow**: From match start to game-over, everything works smoothly.  
+- **Complete Game Flow**: From match start to game-over, everything works smoothly.
+- **Game History**: game state/data and moves are stored in REDIS while playing and at game end persisted to MONGODB.
+- Implement a **Recovery Mechanism** so players can reconnect after refresh or disconnection.
 
 ---
 
 ## 🚧 Work in Progress
 
-- Store **moves in Redis** for persistence and potential replay.  
 - Add **Guest IDs** for quick play without signup.  
-- Implement a **Recovery Mechanism** so players can reconnect after refresh or disconnection.
 - User Dashboard.
 
 ---
