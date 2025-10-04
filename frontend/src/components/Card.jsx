@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { IoClose } from "react-icons/io5";
 
-export const Card = ({ isOpen, onClose }) => {
+export const Card = ({ isOpen, onClose, onGuestPlay }) => {
   const navigate = useNavigate();
 
   const handleLogin = () => {
@@ -48,6 +48,12 @@ export const Card = ({ isOpen, onClose }) => {
             className='w-full bg-neutral-700 hover:bg-neutral-600 text-white font-semibold py-3 px-4 rounded-md transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 focus:ring-offset-neutral-700'
           >
             Sign Up
+          </button>
+          <button
+            onClick={onGuestPlay}
+            className='w-full text-white font-semibold hover:scale-105 ease-in-out transition duration-200'
+          >
+            Play as Guest
           </button>
         </div>
       </div>

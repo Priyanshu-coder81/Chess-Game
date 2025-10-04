@@ -1,42 +1,64 @@
-import { useEffect, useRef, useState } from "react";
+import { createContext, useContext, useState, useEffect, useRef } from "react";
 import { WS_URL } from "../constant";
 import { io } from "socket.io-client";
+import { useAuth } from "./AuthContext";
+import { useGuest } from "./GuestContext";
 
-export const useSocket = () => {
+const SocketContext = createContext();
+
+const useSocket = () => {
+  const context = useContext(SocketContext);
+  if (!context) {
+    throw new Error("useSocket must be used within a SocketProvider");
+  }
+  return context;
+};
+
+const SocketProvider = ({ children }) => {
   const [socket, setSocket] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
   const reconnectAttempts = useRef(0);
   const maxReconnectAttempts = 5;
-  
+  const { user, token } = useAuth();
+  const { guestId, isGuest } = useGuest();
+
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    
-    if (!token) {
-      console.log("No authentication token found");
+    let authPayload = {};
+
+    if (token && user) {
+      console.log("Initializing socket connection with auth token", token);
+      authPayload = { token };
+    } else if (guestId && isGuest) {
+      console.log("Initializing socket connection as guest", guestId);
+      authPayload = { guestId };
+    } else {
+      console.log(
+        "No authentication token or guest ID found. Skipping socket connection."
+      );
       return;
     }
 
-    console.log("Initializing socket connection with auth token");
-    
     const handleReconnect = () => {
       reconnectAttempts.current += 1;
-      console.log(`Reconnect attempt ${reconnectAttempts.current}/${maxReconnectAttempts}`);
+      console.log(
+        `Reconnect attempt ${reconnectAttempts.current}/${maxReconnectAttempts}`
+      );
     };
-    
+
     const newSocket = io(WS_URL, {
       transports: ["websocket"],
-      auth: { token },
+      auth: { authPayload },
       reconnection: true,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
       reconnectionAttempts: maxReconnectAttempts,
-      timeout: 10000
+      timeout: 10000,
     });
 
     newSocket.on("connect", () => {
       console.log("Socket connected successfully:", {
         socketId: newSocket.id,
-        reconnectAttempts: reconnectAttempts.current
+        reconnectAttempts: reconnectAttempts.current,
       });
       setIsConnected(true);
       reconnectAttempts.current = 0;
@@ -47,7 +69,7 @@ export const useSocket = () => {
         error: error.message,
         type: error.type,
         description: error.description,
-        socketId: newSocket.id
+        socketId: newSocket.id,
       });
       setIsConnected(false);
     });
@@ -56,7 +78,7 @@ export const useSocket = () => {
       console.log("Socket disconnected:", {
         reason,
         socketId: newSocket.id,
-        wasConnected: isConnected
+        wasConnected: isConnected,
       });
       setIsConnected(false);
     });
@@ -64,7 +86,7 @@ export const useSocket = () => {
     newSocket.on("reconnect", (attemptNumber) => {
       console.log("Socket reconnected:", {
         attemptNumber,
-        socketId: newSocket.id
+        socketId: newSocket.id,
       });
       handleReconnect();
     });
@@ -72,14 +94,14 @@ export const useSocket = () => {
     newSocket.on("reconnect_attempt", (attemptNumber) => {
       console.log("Attempting to reconnect:", {
         attemptNumber,
-        maxAttempts: maxReconnectAttempts
+        maxAttempts: maxReconnectAttempts,
       });
     });
 
     newSocket.on("reconnect_error", (error) => {
       console.error("Reconnection error:", {
         error: error.message,
-        attemptNumber: reconnectAttempts.current
+        attemptNumber: reconnectAttempts.current,
       });
     });
 
@@ -105,7 +127,16 @@ export const useSocket = () => {
         newSocket.disconnect();
       }
     };
-  }, []);
+  }, [token, user, guestId, isGuest]);
 
-  return socket;
+  const value = {
+    socket,
+    isConnected,
+  };
+
+  return (
+    <SocketContext.Provider value={value}>{children}</SocketContext.Provider>
+  );
 };
+
+export { useSocket, SocketProvider };

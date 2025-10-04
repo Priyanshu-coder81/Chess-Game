@@ -1,6 +1,5 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import { apiService } from "../services/api";
-import { useSocket } from "../hooks/useSocket";
 
 const AuthContext = createContext();
 
@@ -18,9 +17,7 @@ const AuthProvider = ({ children }) => {
   const [error, setError] = useState(null);
   const [formError, setFormError] = useState(null);
   const [token, setToken] = useState(null);
-  const socket = useSocket();
-
- // Check if user is already logged in on app start
+  // Check if user is already logged in on app start
   useEffect(() => {
     checkAuthStatus();
   }, []);
@@ -32,13 +29,31 @@ const AuthProvider = ({ children }) => {
     } catch (error) {
       console.log("User not authenticated:", error.message);
       setUser(null);
-        // Clear any errors - this is expected behavior
-    setError(null);
-    setFormError(null);
+      // Clear any errors - this is expected behavior
+      setError(null);
+      setFormError(null);
     } finally {
       setLoading(false);
     }
   };
+
+  /*   const guestLogin = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const guestId = getOrCreateGuestSession();
+      setUser({ id: guestId, username: `Guest_${guestId.subtring(6, 12)}` });
+      setIsGuest(true);
+      localStorage.removeItem("token");
+      return { success: true, guestId };
+    } catch (error) {
+      onsole.error("Guest login failed:", error);
+      setError("Failed to start guest session.");
+      return { success: false, error: error.message };
+    } finally {
+      setLoading(false);
+    }
+  }; */
 
   const login = async (credentials) => {
     try {
@@ -108,7 +123,6 @@ const AuthProvider = ({ children }) => {
     loading,
     error,
     formError,
-    socket,
     login,
     register,
     logout,

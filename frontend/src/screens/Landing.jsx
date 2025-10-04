@@ -3,18 +3,31 @@ import { Card } from "../components/Card";
 import { useState } from "react";
 import Navbar from "../components/Navbar";
 import { useAuth } from "../contexts/AuthContext";
+import { useGuest } from "../contexts/GuestContext";
 import { useNavigate } from "react-router";
 
 const Landing = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const {isAuthenticated} = useAuth();
+  const { isAuthenticated } = useAuth();
+  const { createGuestSession } = useGuest();
   const navigate = useNavigate();
 
   const handleOnPlay = () => {
-    if(!isAuthenticated) {
-    setIsModalOpen(true);}
-    else {
-      navigate('/game');
+    if (!isAuthenticated) {
+      setIsModalOpen(true);
+    } else {
+      navigate("/game");
+    }
+  };
+
+  const handleGuestPlay = async () => {
+    try {
+      const guestId = createGuestSession();
+      console.log("Guest session created:", guestId);
+      setIsModalOpen(false); // Close modal on successful guest login
+      navigate("/game");
+    } catch (error) {
+      console.error("Guest login failed:", error);
     }
   };
 
@@ -48,7 +61,11 @@ const Landing = () => {
         </div>
       </div>
       {/* Modal */}
-      <Card isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+      <Card
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onGuestPlay={handleGuestPlay}
+      />
     </div>
   );
 };

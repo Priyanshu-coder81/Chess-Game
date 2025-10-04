@@ -42,7 +42,7 @@ const io = new Server(server, {
   cors: {
     origin: process.env.CORS_ORIGIN || "http://localhost:5173",
     credentials: true,
-    methods: ["GET", "POST"]
+    methods: ["GET", "POST"],
   },
   transports: ["websocket", "polling"],
   pingTimeout: 60000,
@@ -55,14 +55,20 @@ const gameManager = new GameManager(io);
 io.on("connection", async (socket) => {
   console.log("New socket connection attempt", socket.id);
   const token = socket.handshake.auth.token;
- 
-  
-  if (typeof token === "string" && token.trim() && token !== "undefined" && token !== "null") {
+
+  if (
+    typeof token === "string" &&
+    token.trim() &&
+    token !== "undefined" &&
+    token !== "null"
+  ) {
     try {
       const user = await verifyAccessToken(token);
       if (user) {
         socket.user = user;
-        console.log(`Authenticated user connected: ${user.username} (Socket ID: ${socket.id})`);
+        console.log(
+          `Authenticated user connected: ${user.username} (Socket ID: ${socket.id})`
+        );
       }
     } catch (err) {
       console.error("Socket authentication failed:", err);
@@ -76,14 +82,13 @@ io.on("connection", async (socket) => {
     socket.disconnect();
     return;
   }
-  
+
   // Only add authenticated users
   if (socket.user) {
     gameManager.addUser(socket);
-    
+
     socket.emit("auth_success", { username: socket.user.username });
-  }
-  else {
+  } else {
     console.log("no socket.user object ");
   }
 });

@@ -1,6 +1,5 @@
 import ChessBoard from "../components/ChessBoard";
 import Button from "../components/Button";
-import { useSocket } from "../hooks/useSocket.js";
 import { useEffect, useRef, useState } from "react";
 import { Chess } from "chess.js";
 import { Dashboard } from "../components/Dashboard.jsx";
@@ -21,12 +20,16 @@ import {
   RECOVERY_FAILED,
 } from "../constant.js";
 import { useAuth } from "../contexts/AuthContext.jsx";
+import { useGuest } from "../contexts/GuestContext.jsx";
+import { useSocket } from "../contexts/SocketContext.jsx";
 import Navbar from "../components/Navbar";
 import DrawOfferNotification from "../components/DrawOfferNotification.jsx";
 import ConfirmationSidePopup from "../components/ConfirmationSidePopup.jsx";
 
 const Game = () => {
-  const { user, socket } = useAuth();
+  const { user } = useAuth();
+  const { guestId, isGuest } = useGuest();
+  const { socket } = useSocket();
   const chessRef = useRef(new Chess());
   const gameIdRef = useRef(null);
 
@@ -48,7 +51,11 @@ const Game = () => {
   const [moveHistory, setMoveHistory] = useState([]);
   const [showGameOver, setShowGameOver] = useState(false);
   const [playersData, setPlayersData] = useState({
-    username: user ? user.username : "Guest111",
+    username: user
+      ? user.username
+      : isGuest
+      ? `Guest_${guestId?.substring(6, 12)}`
+      : "Player",
     avatar: user ? user.avatar : "/white_400.png",
   });
   const [opponentData, setOpponentData] = useState({
@@ -100,34 +107,30 @@ const Game = () => {
 
   const handleResign = () => {
     setShowResignConfirmModal(true);
+  };
 
-  }; 
-
-  const handleCancelResign = () =>{
+  const handleCancelResign = () => {
     setShowResignConfirmModal(false);
-  }
+  };
   const handleConfirmResign = () => {
     socket.emit(RESIGN, { gameId: gameIdRef.current });
-    
+
     setShowResignConfirmModal(false);
     console.log("Resignation sent to server");
-  }
+  };
 
   const handleDraw = () => {
-   setShowDrawConfirmModal(true);
-   
+    setShowDrawConfirmModal(true);
   };
 
   const handleCancelDraw = () => {
     setShowDrawConfirmModal(false);
-  }
+  };
 
   const handleConfirmDraw = () => {
-    
     socket.emit(DRAW_OFFER, { gameId: gameIdRef.current });
     setShowDrawConfirmModal(false);
-  }
-
+  };
 
   const handleGoHome = () => {
     if (started && !gameOver) {
@@ -151,23 +154,26 @@ const Game = () => {
       console.log("Socket not connected, cannot start game");
       return;
     }
-    if (!user) {
-      console.log("No user data, cannot start game");
+    if (!user && !isGuest) {
+      console.log("No user data or guest session, cannot start game");
       return;
     }
-    console.log("Requesting game initialization as:", user.username);
+    const playerName = user
+      ? user.username
+      : `Guest_${guestId?.substring(6, 12)}`;
+    console.log("Requesting game initialization as:", playerName);
     socket.emit(INIT_GAME);
   };
 
   const handleCloseGameOver = () => {
     setShowGameOver(false);
   };
-useEffect(() => {
-  if (socket && socket.connected && authenticated) {
-    // Only attempt recovery when both are true
-    attemptRecovery();
-  }
-}, [socket, authenticated]);
+  useEffect(() => {
+    if (socket && socket.connected && authenticated) {
+      // Only attempt recovery when both are true
+      attemptRecovery();
+    }
+  }, [socket, authenticated]);
 
   useEffect(() => {
     if (user) {
@@ -175,19 +181,24 @@ useEffect(() => {
         username: user.username,
         avatar: user.avatar || "/white_400.png",
       });
+    } else if (isGuest && guestId) {
+      setPlayersData({
+        username: `Guest_${guestId.substring(6, 12)}`,
+        avatar: "/white_400.png",
+      });
     }
-  }, [user]);
-  
-    const attemptRecovery = () => {
-      console.log("Finding stored game ID for recovery...");
-      const storedGameId = localStorage.getItem("chess_game_id");
-      if (storedGameId) {
-        console.log("Attempting to recover game:", storedGameId);
-        console.log(Date.now());
-        socket.emit(RECOVER_GAME, { gameId: storedGameId });
-      }
-      return;
-    };
+  }, [user, isGuest, guestId]);
+
+  const attemptRecovery = () => {
+    console.log("Finding stored game ID for recovery...");
+    const storedGameId = localStorage.getItem("chess_game_id");
+    if (storedGameId) {
+      console.log("Attempting to recover game:", storedGameId);
+      console.log(Date.now());
+      socket.emit(RECOVER_GAME, { gameId: storedGameId });
+    }
+    return;
+  };
 
   useEffect(() => {
     if (!socket) {
@@ -197,9 +208,9 @@ useEffect(() => {
     console.log("Socket initialization in Game component:", {
       connected: socket.connected,
       id: socket.id,
-      authenticated: !!user
+      authenticated: !!user,
     });
-    
+
     // Listen for authentication events
     socket.on("auth_success", (data) => {
       console.log("Authentication successful:", data);
@@ -210,13 +221,10 @@ useEffect(() => {
       console.error("Authentication error:", data);
       setAuthenticated(false);
     });
-    
 
-  socket.on("connect", () => {
+    socket.on("connect", () => {
       console.log("Socket connected successfully", socket.id);
-    
-    }); 
-
+    });
 
     socket.on("connect_error", (error) => {
       console.error("Socket connection error:", error);
@@ -229,7 +237,7 @@ useEffect(() => {
 
     socket.on(CONNECTING, () => {
       console.log("Matchmaking in progress... Socket ID:", socket.id);
-      console.log("Current user: line 220",user?.username);
+      console.log("Current user: line 220", user?.username);
       setConnect(true);
     });
 
@@ -253,16 +261,16 @@ useEffect(() => {
       localStorage.removeItem("chess_game_id");
     });
 
-
     socket.on(INIT_GAME, (data) => {
       console.log("Received INIT_GAME event with full data:", data);
-      const { gameId, color, players, initialWhiteTime, initialBlackTime } = data;
-      
+      const { gameId, color, players, initialWhiteTime, initialBlackTime } =
+        data;
+
       if (!gameId || !color || !players) {
         console.error("Invalid INIT_GAME data received:", data);
         return;
       }
-      
+
       setConnect(false);
       localStorage.setItem("chess_game_id", gameId);
       gameIdRef.current = gameId;
@@ -272,12 +280,12 @@ useEffect(() => {
       const newBoard = chessRef.current
         .board()
         .map((row) => row.map((square) => (square ? { ...square } : null)));
-      
+
       console.log("Setting game state:", {
         color,
         players,
         gameId,
-        time: { white: initialWhiteTime, black: initialBlackTime }
+        time: { white: initialWhiteTime, black: initialBlackTime },
       });
 
       setBoard(newBoard);
@@ -291,13 +299,13 @@ useEffect(() => {
         if (players.player) {
           setPlayersData({
             username: players.player.username,
-            avatar: players.player.avatar || "/white_400.png"
+            avatar: players.player.avatar || "/white_400.png",
           });
         }
         if (players.opponent) {
           setOpponentData({
             username: players.opponent.username,
-            avatar: players.opponent.avatar || "/white_400.png"
+            avatar: players.opponent.avatar || "/white_400.png",
           });
         }
       }
@@ -313,7 +321,7 @@ useEffect(() => {
     });
 
     socket.on(GAME_OVER, ({ winner, reason }) => {
-       localStorage.removeItem("chess_game_id");
+      localStorage.removeItem("chess_game_id");
       setGameOver(true);
       setWinner(winner);
       setGameOverReason(reason);
@@ -323,34 +331,31 @@ useEffect(() => {
       console.log("Game End", { winner, reason });
     });
 
-    socket.on(
-      MOVE,
-      ({ move, timeSpent }) => {
-        const result = chessRef.current.move(move);
-        if (result) {
-          // Create a proper deep copy of the board for React state update
-          const newBoard = chessRef.current
-            .board()
-            .map((row) => row.map((square) => (square ? { ...square } : null)));
-          setBoard(newBoard);
+    socket.on(MOVE, ({ move, timeSpent }) => {
+      const result = chessRef.current.move(move);
+      if (result) {
+        // Create a proper deep copy of the board for React state update
+        const newBoard = chessRef.current
+          .board()
+          .map((row) => row.map((square) => (square ? { ...square } : null)));
+        setBoard(newBoard);
 
-          setMoveHistory((prev) => [
-            ...prev,
-            {
-              san: result.san,
-              color: result.color === "w" ? "white" : "black",
-              timeSpent: timeSpent || 0,
-            },
-          ]);
-          console.log("Move applied successfully:", result.san);
+        setMoveHistory((prev) => [
+          ...prev,
+          {
+            san: result.san,
+            color: result.color === "w" ? "white" : "black",
+            timeSpent: timeSpent || 0,
+          },
+        ]);
+        console.log("Move applied successfully:", result.san);
 
-          // Update turn after successful move
-          setTurn(chessRef.current.turn() === "w" ? "white" : "black");
-        } else {
-          console.warn("Invalid move received:", move);
-        }
+        // Update turn after successful move
+        setTurn(chessRef.current.turn() === "w" ? "white" : "black");
+      } else {
+        console.warn("Invalid move received:", move);
       }
-    );
+    });
 
     socket.on(RESIGN_ACCEPTED, ({ gameId, winner, reason }) => {
       console.log("Resign accepted:", { gameId, winner, reason });
@@ -390,7 +395,7 @@ useEffect(() => {
 
     return () => {
       if (!socket) return;
-      
+
       // Clean up all socket event listeners
       socket.off("connect");
       socket.off("auth_success");
@@ -417,7 +422,6 @@ useEffect(() => {
   return (
     <div className='min-h-screen  bg-neutral-800 text-white'>
       <Navbar />
-     
 
       <div className={` flex justify-center items-center`}>
         {gameOver && showGameOver && (
@@ -431,26 +435,26 @@ useEffect(() => {
             onClose={handleCloseGameOver}
           />
         )}
-         <DrawOfferNotification
-        socket={socket}
-        gameId={gameIdRef.current}
-        showDrawOfferModal={showDrawOfferModal}
-        currentDrawOffer={currentDrawOffer}
-        setShowDrawOfferModal={setShowDrawOfferModal}
-        setCurrentDrawOffer={setCurrentDrawOffer}
-      />
-       <ConfirmationSidePopup
-           showModal={showResignConfirmModal}
-     title="Confirm Resignation"
-         message="Are you sure you want to resign? This will end the game immediately."
-    onClose={handleCancelResign}
-      onConfirm={handleConfirmResign}
-    />
-   <ConfirmationSidePopup
-       showModal={showDrawConfirmModal}
-    title="Confirm Draw Offer"
-        message="Are you sure you want to offer a draw to your opponent?"
-         onClose={handleCancelDraw}
+        <DrawOfferNotification
+          socket={socket}
+          gameId={gameIdRef.current}
+          showDrawOfferModal={showDrawOfferModal}
+          currentDrawOffer={currentDrawOffer}
+          setShowDrawOfferModal={setShowDrawOfferModal}
+          setCurrentDrawOffer={setCurrentDrawOffer}
+        />
+        <ConfirmationSidePopup
+          showModal={showResignConfirmModal}
+          title='Confirm Resignation'
+          message='Are you sure you want to resign? This will end the game immediately.'
+          onClose={handleCancelResign}
+          onConfirm={handleConfirmResign}
+        />
+        <ConfirmationSidePopup
+          showModal={showDrawConfirmModal}
+          title='Confirm Draw Offer'
+          message='Are you sure you want to offer a draw to your opponent?'
+          onClose={handleCancelDraw}
           onConfirm={handleConfirmDraw}
         />
 
@@ -473,14 +477,17 @@ useEffect(() => {
 
             <div className='flex justify-center items-center w-[95%] m-auto md:col-span-2'>
               {!started ? (
-                !connect? 
-               ( <Button
-                  onClick={handleOnClick}
-                  connect = {connect}
-                  className='w-full md:w-auto min-w-3xs'
-                >
-                  Start Game
-                </Button>) : <Button connect = {connect} >Loading... </Button>
+                !connect ? (
+                  <Button
+                    onClick={handleOnClick}
+                    connect={connect}
+                    className='w-full md:w-auto min-w-3xs'
+                  >
+                    Start Game
+                  </Button>
+                ) : (
+                  <Button connect={connect}>Loading... </Button>
+                )
               ) : (
                 <Dashboard
                   color={color}
