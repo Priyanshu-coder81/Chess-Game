@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { redisClient } from "../db/redis.js";
 import { Game as GameModel } from "../models/GameModel.models.js";
 
@@ -57,15 +58,27 @@ export class GameStateManager {
         result = "draw";
       }
 
+      const ensureObjectId = (id) => {
+        // If it's already a valid ObjectId, keep it
+        if (mongoose.Types.ObjectId.isValid(id)) return id;
+
+        // Otherwise, generate a fake one for guests
+        return new mongoose.Types.ObjectId();
+      };
+    
       const gameData = {
         gameId,
-        whitePlayer: gameState.players.white?.id,
-        blackPlayer: gameState.players.black?.id,
+        whitePlayer: ensureObjectId(gameState.players.white?.id),
+        blackPlayer: ensureObjectId(gameState.players.black?.id),
         moves: formattedMoves,
         result,
-        winner: gameState.winner ? 
-          (gameState.winner === gameState.players.white.id ? gameState.players.white.id : gameState.players.black.id) 
-          : undefined,
+        winner: gameState.winner
+        ? ensureObjectId(
+            gameState.winner === gameState.players.white.id
+              ? gameState.players.white.id
+              : gameState.players.black.id
+          )
+        : undefined,
         status: gameState.status,
         startedAt: new Date(gameState.updatedAt),
         endedAt: new Date()
