@@ -54,8 +54,11 @@ const gameManager = new GameManager(io);
 // Socket.IO connection handling
 io.on("connection", async (socket) => {
   console.log("New socket connection attempt", socket.id);
-  const token = socket.handshake.auth.token;
+  const authPayload = socket.handshake.auth.authPayload;
+  const token = authPayload?.token;
+  const guestId = authPayload?.guestId;
 
+  // Handle authenticated users
   if (
     typeof token === "string" &&
     token.trim() &&
@@ -66,9 +69,13 @@ io.on("connection", async (socket) => {
       const user = await verifyAccessToken(token);
       if (user) {
         socket.user = user;
+        socket.isGuest = false;
         console.log(
           `Authenticated user connected: ${user.username} (Socket ID: ${socket.id})`
         );
+        gameManager.addUser(socket);
+        socket.emit("auth_success", { username: socket.user.username });
+        return;
       }
     } catch (err) {
       console.error("Socket authentication failed:", err);
@@ -76,21 +83,35 @@ io.on("connection", async (socket) => {
       socket.disconnect();
       return;
     }
-  } else {
-    console.log("No valid token provided");
-    socket.emit("auth_error", { message: "No valid token provided" });
-    socket.disconnect();
+  }
+
+  // Handle guest users
+  if (
+    typeof guestId === "string" &&
+    guestId.trim() &&
+    guestId !== "undefined" &&
+    guestId !== "null" &&
+    guestId.startsWith("guest_")
+  ) {
+    socket.user = {
+      _id: guestId,
+      username: `Guest_${guestId.substring(6, 12)}`,
+      avatar: "/white_400.png",
+      isGuest: true,
+    };
+    socket.isGuest = true;
+    console.log(
+      `Guest user connected: ${socket.user.username} (Socket ID: ${socket.id})`
+    );
+    gameManager.addUser(socket);
+    socket.emit("auth_success", { username: socket.user.username });
     return;
   }
 
-  // Only add authenticated users
-  if (socket.user) {
-    gameManager.addUser(socket);
-
-    socket.emit("auth_success", { username: socket.user.username });
-  } else {
-    console.log("no socket.user object ");
-  }
+  // No valid authentication provided
+  console.log("No valid authentication provided");
+  socket.emit("auth_error", { message: "No valid authentication provided" });
+  socket.disconnect();
 });
 
 // Connect to database and start server

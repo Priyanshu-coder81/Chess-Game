@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { INIT_GAME, MOVE } from "../constant";
 import { ProfileCard } from "./ProfileCard.jsx";
-import { useAuth } from "../contexts/AuthContext.jsx";
+import { useSocket } from "../contexts/SocketContext.jsx";
 
 const ChessBoard = ({
   board,
@@ -18,7 +18,7 @@ const ChessBoard = ({
   const [from, setFrom] = useState(null);
   const [whiteTime, setWhiteTime] = useState(null);
   const [blackTime, setBlackTime] = useState(null);
-  const {socket} = useAuth();
+  const {socket} = useSocket();
 
   const timerRef = useRef(null);
 

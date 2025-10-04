@@ -48,8 +48,11 @@ export class Game {
 
   async init() {
     try {
-      // Validate player data before initialization
-      if (!this.player1?.user?._id || !this.player2?.user?._id) {
+      // Validate player data before initialization (for both authenticated and guest users)
+      if (
+        (!this.player1?.user?._id && !this.player1?.isGuest) ||
+        (!this.player2?.user?._id && !this.player2?.isGuest)
+      ) {
         throw new Error("Invalid player data during initialization");
       }
 
@@ -59,11 +62,13 @@ export class Game {
           id: this.player1.id,
           userId: this.player1.user._id,
           username: this.player1.user.username,
+          isGuest: this.player1.isGuest,
         },
         player2: {
           id: this.player2.id,
           userId: this.player2.user._id,
           username: this.player2.user.username,
+          isGuest: this.player2.isGuest,
         },
       });
 
@@ -362,8 +367,8 @@ export class Game {
         return;
       }
 
-      // Validate socket has user
-      if (!socket?.user || !socket.user._id) {
+      // Validate socket has user (for both authenticated and guest users)
+      if (!socket?.user || (!socket.user._id && !socket.isGuest)) {
         socket.emit(RECOVERY_FAILED, { reason: "Missing user info" });
         return;
       }
@@ -571,28 +576,37 @@ export class Game {
 
       const now = Date.now();
       const currentColor = playerColor === "w" ? "white" : "black";
-      
-      const elapsedSinceLastUpdate = this.lastUpdateTime ? now - this.lastUpdateTime : 0;
+
+      const elapsedSinceLastUpdate = this.lastUpdateTime
+        ? now - this.lastUpdateTime
+        : 0;
       if (elapsedSinceLastUpdate > 0) {
-        this.clocks[currentColor] = Math.max(0, this.clocks[currentColor] - elapsedSinceLastUpdate);
+        this.clocks[currentColor] = Math.max(
+          0,
+          this.clocks[currentColor] - elapsedSinceLastUpdate
+        );
         this.lastUpdateTime = now;
       }
-  
+
       // 2) Compute timeSpent for this turn
       // Prefer the difference from clocks to avoid small drift: turnClockAtStart - currentClock
       let timeSpent;
       if (typeof this.turnClockAtStart === "number") {
-        const timeFromClocks = this.turnClockAtStart - this.clocks[currentColor];
+        const timeFromClocks =
+          this.turnClockAtStart - this.clocks[currentColor];
         if (timeFromClocks >= 0) {
           timeSpent = timeFromClocks;
         } else {
           // fallback
-          timeSpent = (this.turnStartTime ? now - this.turnStartTime : elapsedSinceLastUpdate);
+          timeSpent = this.turnStartTime
+            ? now - this.turnStartTime
+            : elapsedSinceLastUpdate;
         }
       } else {
-        timeSpent = (this.turnStartTime ? now - this.turnStartTime : elapsedSinceLastUpdate);
+        timeSpent = this.turnStartTime
+          ? now - this.turnStartTime
+          : elapsedSinceLastUpdate;
       }
-
 
       console.log("Move timing:", {
         moveStartTime: this.currentTurnStartTime,
@@ -611,14 +625,14 @@ export class Game {
 
       const newClocks = {
         ...state.clocks,
-        [currentColor]: this.clocks[currentColor]
+        [currentColor]: this.clocks[currentColor],
       };
 
       // Check for timeout
       if (newClocks[currentColor] <= 0) {
         await GameStateManager.updateGameState(this.gameId, {
           clocks: newClocks,
-          updatedAt: now
+          updatedAt: now,
         });
         await this.endGameDueToTimeEnd(
           currentColor === "white" ? "black" : "white"
@@ -667,9 +681,9 @@ export class Game {
       });
 
       // Only after emitting the move, update the turn start time for the next move
-     const nextColor = this.board.turn() === "w"? "white":"black";
-     this.turnStartTime = Date.now();
-     this.turnClockAtStart = this.clocks[nextColor];
+      const nextColor = this.board.turn() === "w" ? "white" : "black";
+      this.turnStartTime = Date.now();
+      this.turnClockAtStart = this.clocks[nextColor];
     } catch (err) {
       console.error("Move error:", err);
       socket.emit("invalid_move", { message: "Server error" });

@@ -35,6 +35,7 @@ export class GameStateManager {
   static async persistToMongoDB(gameId) {
     try {
       const gameState = await this.getGameState(gameId);
+      console.log(gameState);
       if (!gameState) {
         console.error("No game state found for persistence:", gameId);
         return;
@@ -58,8 +59,8 @@ export class GameStateManager {
 
       const gameData = {
         gameId,
-        whitePlayer: gameState.players.white.id,
-        blackPlayer: gameState.players.black.id,
+        whitePlayer: gameState.players.white?.id,
+        blackPlayer: gameState.players.black?.id,
         moves: formattedMoves,
         result,
         winner: gameState.winner ? 
