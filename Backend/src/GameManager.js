@@ -29,9 +29,7 @@ export class GameManager {
 
     // Game recovery
     socket.on(RECOVER_GAME, async ({ gameId }) => {
-      console.log(
-        `Recovery request from user: ${socket.user?.username} (${socket.id}) for gameId: ${gameId}`
-      );
+    
       try {
         const game = this.games.get(gameId);
         if (!game) {
@@ -115,13 +113,10 @@ export class GameManager {
 
   async handleMatchmaking(socket) {
     try {
-      console.log(
-        `Matchmaking request from user: ${socket.user?.username} (${socket.id})`
-      );
+  
 
       // Validate socket has user data (for both authenticated and guest users)
       if (!socket.user || (!socket.user._id && !socket.isGuest)) {
-        console.log("Rejecting matchmaking: No user data");
         socket.emit(RECOVERY_FAILED, { reason: "User data not found" });
         return;
       }
@@ -131,9 +126,7 @@ export class GameManager {
 
       // Don't add to queue if already in a game or queue
       if (this.isPlayerInGame(socket)) {
-        console.log(
-          `${socket.user.username} is already in a game, rejecting matchmaking`
-        );
+     
         return;
       }
 
@@ -141,61 +134,40 @@ export class GameManager {
       this.matchQueue = this.matchQueue.filter((s) => s !== socket);
 
       // Log current queue state
-      console.log(
-        `Current queue before adding ${socket.user.username}:`,
-        this.matchQueue.map((s) => ({ id: s.id, username: s.user.username }))
-      );
+ 
 
       // Add to matchmaking queue
       this.matchQueue.push(socket);
       socket.emit(CONNECTING);
 
-      console.log(
-        `Added ${socket.user.username} to queue. Queue size: ${this.matchQueue.length}`
-      );
 
       // Create game if we have enough players
       if (this.matchQueue.length >= 2) {
-        console.log("Found enough players for a game!");
 
         const player1 = this.matchQueue.shift();
         const player2 = this.matchQueue.shift();
 
-        console.log("Attempting to create game between:", {
-          player1: { id: player1.id, username: player1.user?.username },
-          player2: { id: player2.id, username: player2.user?.username },
-        });
+       
 
         // Double check both players have user data (for both authenticated and guest users)
         if (
           (!player1.user?._id && !player1.isGuest) ||
           (!player2.user?._id && !player2.isGuest)
         ) {
-          console.log("Match failed: Missing user data");
           this.handleFailedMatch(player1, player2);
           return;
         }
 
         await this.createGame(player1, player2);
-        console.log(
-          `Game created successfully between ${player1.user.username} and ${player2.user.username}`
-        );
-      } else {
-        console.log(
-          `Waiting for more players. Current queue size: ${this.matchQueue.length}`
-        );
-      }
+     
+      } 
     } catch (err) {
-      console.error("Error in matchmaking:", err);
       socket.emit(RECOVERY_FAILED, { reason: "Matchmaking failed" });
     }
   }
 
   handleFailedMatch(player1, player2) {
-    console.error("Players missing user data:", {
-      player1Has: !!player1.user?._id || !!player1.isGuest,
-      player2Has: !!player2.user?._id || !!player2.isGuest,
-    });
+
 
     // Notify players
     player1.emit(RECOVERY_FAILED, { reason: "Invalid player data" });
@@ -240,11 +212,7 @@ export class GameManager {
       this.games.set(gameId, game);
 
       // Log successful game creation
-      console.log("Game created successfully:", {
-        gameId,
-        player1: player1.user.username,
-        player2: player2.user.username,
-      });
+
     } catch (err) {
       console.error("Error creating game:", err);
       player1.emit(RECOVERY_FAILED, { reason: "Failed to create game" });

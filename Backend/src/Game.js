@@ -56,21 +56,7 @@ export class Game {
         throw new Error("Invalid player data during initialization");
       }
 
-      console.log("Initializing game:", {
-        gameId: this.gameId,
-        player1: {
-          id: this.player1.id,
-          userId: this.player1.user._id,
-          username: this.player1.user.username,
-          isGuest: this.player1.isGuest,
-        },
-        player2: {
-          id: this.player2.id,
-          userId: this.player2.user._id,
-          username: this.player2.user.username,
-          isGuest: this.player2.isGuest,
-        },
-      });
+
 
       const initialState = {
         fen: this.board.fen(),
@@ -94,22 +80,13 @@ export class Game {
         updatedAt: Date.now(),
       };
 
-      console.log("Saving initial game state to Redis:", {
-        gameId: this.gameId,
-        fen: initialState.fen,
-        turn: initialState.turn,
-        status: initialState.status,
-      });
 
       await GameStateManager.saveGameState(this.gameId, initialState);
-      console.log(
-        "Game state successfully saved to Redis for game:",
-        this.gameId
-      );
+  
 
       // Set the initial turn start time only after game is fully initialized
       this.currentTurnStartTime = Date.now();
-      console.log("Initial turn start time set:", this.currentTurnStartTime);
+    
     } catch (error) {
       console.error("Error initializing game:", {
         error: error.message,
@@ -156,19 +133,7 @@ export class Game {
         },
       };
 
-      console.log("Sending INIT_GAME to players:", {
-        gameId: this.gameId,
-        player1: {
-          id: this.player1.id,
-          username: this.player1.user.username,
-          data: player1Data,
-        },
-        player2: {
-          id: this.player2.id,
-          username: this.player2.user.username,
-          data: player2Data,
-        },
-      });
+  
 
       // Emit to both players with acknowledgment
       this.player1.emit(INIT_GAME, player1Data, (error) => {
@@ -177,12 +142,7 @@ export class Game {
             playerId: this.player1.id,
             error,
           });
-        } else {
-          console.log(
-            "INIT_GAME successfully sent to player1:",
-            this.player1.id
-          );
-        }
+        } 
       });
 
       this.player2.emit(INIT_GAME, player2Data, (error) => {
@@ -191,12 +151,7 @@ export class Game {
             playerId: this.player2.id,
             error,
           });
-        } else {
-          console.log(
-            "INIT_GAME successfully sent to player2:",
-            this.player2.id
-          );
-        }
+        } 
       });
     } catch (error) {
       console.error("Error sending INIT_GAME events:", {
@@ -207,7 +162,6 @@ export class Game {
       });
       throw error;
     }
-    console.log("Both players notified of game start:", this.gameId);
 
     this.lastUpdateTime = Date.now();
     const initialColor = this.board.turn() === "w" ? "white" : "black";
@@ -418,6 +372,7 @@ export class Game {
           err
         );
       }
+      const otherSocket = color === "white" ? this.player2 : this.player1;
 
       // Emit GAME_RECOVERED to the reconnecting socket
       socket.emit(GAME_RECOVERED, {
@@ -426,13 +381,21 @@ export class Game {
         fen: state.fen,
         moves: state.moves,
         clocks: state.clocks,
-        players: state.players,
+        players: {
+          player: {
+            username: socket.user.username,
+            avatar: socket.user.avatar || "/white_400.png",
+          },
+          opponent: {
+            username: otherSocket.user.username, // Use the other socket's user data
+            avatar: otherSocket.user.avatar || "/white_400.png", // Use the other socket's user data
+          },
+        },
         status: state.status,
         turn: state.turn,
       });
 
       // Also optionally notify the other player that their opponent reconnected
-      const otherSocket = color === "white" ? this.player2 : this.player1;
       if (otherSocket && otherSocket.id && otherSocket.id !== socket.id) {
         otherSocket.emit("opponent_reconnected", { gameId: this.gameId });
       }
@@ -608,12 +571,7 @@ export class Game {
           : elapsedSinceLastUpdate;
       }
 
-      console.log("Move timing:", {
-        moveStartTime: this.currentTurnStartTime,
-        moveEndTime: now,
-        timeSpentMs: timeSpent,
-        timeSpentSec: timeSpent / 1000,
-      });
+  
 
       const moveData = {
         color: playerColor === "w" ? "white" : "black",
@@ -653,11 +611,7 @@ export class Game {
         // The winner is the player who made the move (playerColor)
         // Since after a checkmate move, the turn switches but the game is over
         const winner = currentColor;
-        console.log("Checkmate detected:", {
-          movingPlayer: playerColor,
-          winner,
-          currentTurn: this.board.turn(),
-        });
+    
 
         updates.status = "checkmate";
         updates.winner = winner; // Store the winner in the game state

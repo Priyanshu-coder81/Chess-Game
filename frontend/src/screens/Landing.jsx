@@ -23,7 +23,6 @@ const Landing = () => {
   const handleGuestPlay = async () => {
     try {
       const guestId = createGuestSession();
-      console.log("Guest session created:", guestId);
       setIsModalOpen(false); // Close modal on successful guest login
       navigate("/game");
     } catch (error) {

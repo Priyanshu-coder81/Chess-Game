@@ -42,8 +42,6 @@ async function processGameMoves() {
 
         const parsedMoves = movesToProcessJson.map(moveJson => JSON.parse(moveJson));
 
-        console.log(parsedMoves);
-
         if (parsedMoves.length > 0) {
           await GameModel.findByIdAndUpdate(
             mongoGameId,
@@ -74,10 +72,7 @@ async function processGameMoves() {
             );
             // After cleaning Redis, mark as 'completed' in MongoDB to prevent re-processing
             await GameModel.findByIdAndUpdate(mongoGameId, { status: 'completed' });
-            console.log(`[Worker] Cleaned up Redis keys for game ${nanoidGameId} and marked as 'completed' in MongoDB.`);
-          } else {
-              console.log(`[Worker] Game ${nanoidGameId} ended but Redis queue still has ${currentQueueLength} moves. Will re-attempt cleanup.`);
-          }
+          } 
       }
     }
   } catch (error) {
@@ -90,6 +85,5 @@ async function processGameMoves() {
 
 export async function startMovePersistenceWorker() {
   await connectDB(); // Ensure MongoDB is connected for the worker
-  console.log('Move persistence worker started.');
   processGameMoves(); // Start the first processing cycle
 }

@@ -8,7 +8,6 @@ const DrawOfferNotification = ({ socket, gameId, showDrawOfferModal, currentDraw
 
   const handleAcceptDrawOffer = () => {
     if (currentDrawOffer) {
-      console.log("Draw offer accepted");
       socket.emit(DRAW_ACCEPTED, { gameId: currentDrawOffer.gameId });
       setShowDrawOfferModal(false);
       setCurrentDrawOffer(null);
@@ -17,7 +16,6 @@ const DrawOfferNotification = ({ socket, gameId, showDrawOfferModal, currentDraw
 
   const handleDeclineDrawOffer = () => {
     if (currentDrawOffer) {
-      console.log("Draw offer declined");
       socket.emit(DRAW_DECLINED, { gameId: currentDrawOffer.gameId });
       setShowDrawOfferModal(false);
       setCurrentDrawOffer(null);

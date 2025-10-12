@@ -19,6 +19,10 @@ const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(null);
   // Check if user is already logged in on app start
   useEffect(() => {
+    const storedToken = localStorage.getItem("token");
+    if (storedToken) {
+      setToken(storedToken); // Set the token state from localStorage
+    }
     checkAuthStatus();
   }, []);
 
@@ -27,7 +31,6 @@ const AuthProvider = ({ children }) => {
       const response = await apiService.getCurrentUser();
       setUser(response.data);
     } catch (error) {
-      console.log("User not authenticated:", error.message);
       setUser(null);
       // Clear any errors - this is expected behavior
       setError(null);

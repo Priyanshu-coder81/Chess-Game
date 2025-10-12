@@ -19,30 +19,31 @@ const SocketProvider = ({ children }) => {
   const [isConnected, setIsConnected] = useState(false);
   const reconnectAttempts = useRef(0);
   const maxReconnectAttempts = 5;
-  const { user, token } = useAuth();
-  const { guestId, isGuest } = useGuest();
+  const { user, token , loading:authLoading } = useAuth();
+  const { guestId, isGuest, loading: guestLoading } = useGuest();
 
   useEffect(() => {
+
+    if(authLoading && guestLoading) {
+      return;
+    }
+
+   
+
     let authPayload = {};
 
+
     if (token && user) {
-      console.log("Initializing socket connection with auth token", token);
       authPayload = { token };
     } else if (guestId && isGuest) {
-      console.log("Initializing socket connection as guest", guestId);
       authPayload = { guestId };
     } else {
-      console.log(
-        "No authentication token or guest ID found. Skipping socket connection."
-      );
       return;
     }
 
     const handleReconnect = () => {
       reconnectAttempts.current += 1;
-      console.log(
-        `Reconnect attempt ${reconnectAttempts.current}/${maxReconnectAttempts}`
-      );
+
     };
 
     const newSocket = io(WS_URL, {
@@ -56,10 +57,7 @@ const SocketProvider = ({ children }) => {
     });
 
     newSocket.on("connect", () => {
-      console.log("Socket connected successfully:", {
-        socketId: newSocket.id,
-        reconnectAttempts: reconnectAttempts.current,
-      });
+
       setIsConnected(true);
       reconnectAttempts.current = 0;
     });
@@ -75,34 +73,21 @@ const SocketProvider = ({ children }) => {
     });
 
     newSocket.on("disconnect", (reason) => {
-      console.log("Socket disconnected:", {
-        reason,
-        socketId: newSocket.id,
-        wasConnected: isConnected,
-      });
+
       setIsConnected(false);
     });
 
     newSocket.on("reconnect", (attemptNumber) => {
-      console.log("Socket reconnected:", {
-        attemptNumber,
-        socketId: newSocket.id,
-      });
+
       handleReconnect();
     });
 
     newSocket.on("reconnect_attempt", (attemptNumber) => {
-      console.log("Attempting to reconnect:", {
-        attemptNumber,
-        maxAttempts: maxReconnectAttempts,
-      });
+
     });
 
     newSocket.on("reconnect_error", (error) => {
-      console.error("Reconnection error:", {
-        error: error.message,
-        attemptNumber: reconnectAttempts.current,
-      });
+ 
     });
 
     newSocket.on("reconnect_failed", () => {
@@ -112,11 +97,9 @@ const SocketProvider = ({ children }) => {
 
     // Handle auth events
     newSocket.on("auth_success", (data) => {
-      console.log("Socket authenticated:", data);
     });
 
     newSocket.on("auth_error", (data) => {
-      console.error("Socket authentication failed:", data);
       newSocket.disconnect();
     });
 
@@ -127,7 +110,7 @@ const SocketProvider = ({ children }) => {
         newSocket.disconnect();
       }
     };
-  }, [token, user, guestId, isGuest]);
+  }, [token, user, guestId, isGuest , authLoading , guestLoading]);
 
   const value = {
     socket,

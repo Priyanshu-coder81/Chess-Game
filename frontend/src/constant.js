@@ -1,7 +1,7 @@
 export const INIT_GAME = "init_game";
 export const MOVE = "move";
 export const GAME_OVER = "game_over";
-export const WS_URL = "http://localhost:8000";
+export const WS_URL = import.meta.env.VITE_WS_URL;
 export const CONNECTING = "connecting";
 export const RESIGN = "resign";
 export const DRAW_OFFER = "draw_offer";

@@ -53,7 +53,6 @@ const gameManager = new GameManager(io);
 
 // Socket.IO connection handling
 io.on("connection", async (socket) => {
-  console.log("New socket connection attempt", socket.id);
   const authPayload = socket.handshake.auth.authPayload;
   const token = authPayload?.token;
   const guestId = authPayload?.guestId;
@@ -70,9 +69,7 @@ io.on("connection", async (socket) => {
       if (user) {
         socket.user = user;
         socket.isGuest = false;
-        console.log(
-          `Authenticated user connected: ${user.username} (Socket ID: ${socket.id})`
-        );
+
         gameManager.addUser(socket);
         socket.emit("auth_success", { username: socket.user.username });
         return;
@@ -100,16 +97,13 @@ io.on("connection", async (socket) => {
       isGuest: true,
     };
     socket.isGuest = true;
-    console.log(
-      `Guest user connected: ${socket.user.username} (Socket ID: ${socket.id})`
-    );
+
     gameManager.addUser(socket);
     socket.emit("auth_success", { username: socket.user.username });
     return;
   }
 
   // No valid authentication provided
-  console.log("No valid authentication provided");
   socket.emit("auth_error", { message: "No valid authentication provided" });
   socket.disconnect();
 });
@@ -117,12 +111,11 @@ io.on("connection", async (socket) => {
 // Connect to database and start server
 connectDB()
   .then(() => {
-    console.log("Database Connected");
     server.listen(port, () => {
       console.log(`Server is running on port ${port}`);
     });
   })
   .catch((err) => {
-    console.error("Database Connection Failed:", err);
+     console.error("Database Connection Failed:", err);
     process.exit(1);
-  });
+  })

@@ -116,7 +116,6 @@ const Game = () => {
     socket.emit(RESIGN, { gameId: gameIdRef.current });
 
     setShowResignConfirmModal(false);
-    console.log("Resignation sent to server");
   };
 
   const handleDraw = () => {
@@ -151,17 +150,14 @@ const Game = () => {
 
   const handleOnClick = () => {
     if (!socket?.connected) {
-      console.log("Socket not connected, cannot start game");
       return;
     }
     if (!user && !isGuest) {
-      console.log("No user data or guest session, cannot start game");
       return;
     }
     const playerName = user
       ? user.username
       : `Guest_${guestId?.substring(6, 12)}`;
-    console.log("Requesting game initialization as:", playerName);
     socket.emit(INIT_GAME);
   };
 
@@ -190,11 +186,8 @@ const Game = () => {
   }, [user, isGuest, guestId]);
 
   const attemptRecovery = () => {
-    console.log("Finding stored game ID for recovery...");
     const storedGameId = localStorage.getItem("chess_game_id");
     if (storedGameId) {
-      console.log("Attempting to recover game:", storedGameId);
-      console.log(Date.now());
       socket.emit(RECOVER_GAME, { gameId: storedGameId });
     }
     return;
@@ -202,47 +195,33 @@ const Game = () => {
 
   useEffect(() => {
     if (!socket) {
-      console.log("Socket not initialized yet");
       return;
     }
-    console.log("Socket initialization in Game component:", {
-      connected: socket.connected,
-      id: socket.id,
-      authenticated: !!user,
-    });
+
 
     // Listen for authentication events
     socket.on("auth_success", (data) => {
-      console.log("Authentication successful:", data);
       setAuthenticated(true);
     });
 
     socket.on("auth_error", (data) => {
-      console.error("Authentication error:", data);
       setAuthenticated(false);
     });
 
     socket.on("connect", () => {
-      console.log("Socket connected successfully", socket.id);
     });
 
     socket.on("connect_error", (error) => {
-      console.error("Socket connection error:", error);
-      console.error("Socket auth token:", localStorage.getItem("token"));
     });
 
     socket.on("disconnect", (reason) => {
-      console.log("Socket disconnected:", reason);
     });
 
     socket.on(CONNECTING, () => {
-      console.log("Matchmaking in progress... Socket ID:", socket.id);
-      console.log("Current user: line 220", user?.username);
       setConnect(true);
     });
 
     socket.on(GAME_RECOVERED, (data) => {
-      console.log("Game recovered:", data);
       chessRef.current.load(data.fen);
       setBoard(chessRef.current.board());
       setColor(data.color);
@@ -257,12 +236,10 @@ const Game = () => {
     });
 
     socket.on(RECOVERY_FAILED, (data) => {
-      console.log("Game recovery failed:", data);
       localStorage.removeItem("chess_game_id");
     });
 
     socket.on(INIT_GAME, (data) => {
-      console.log("Received INIT_GAME event with full data:", data);
       const { gameId, color, players, initialWhiteTime, initialBlackTime } =
         data;
 
@@ -281,12 +258,7 @@ const Game = () => {
         .board()
         .map((row) => row.map((square) => (square ? { ...square } : null)));
 
-      console.log("Setting game state:", {
-        color,
-        players,
-        gameId,
-        time: { white: initialWhiteTime, black: initialBlackTime },
-      });
+
 
       setBoard(newBoard);
       setStarted(true);
@@ -328,7 +300,6 @@ const Game = () => {
       setShowGameOver(true);
       setShowDrawOfferModal(false);
       setCurrentDrawOffer(false);
-      console.log("Game End", { winner, reason });
     });
 
     socket.on(MOVE, ({ move, timeSpent }) => {
@@ -348,7 +319,6 @@ const Game = () => {
             timeSpent: timeSpent || 0,
           },
         ]);
-        console.log("Move applied successfully:", result.san);
 
         // Update turn after successful move
         setTurn(chessRef.current.turn() === "w" ? "white" : "black");
@@ -358,7 +328,6 @@ const Game = () => {
     });
 
     socket.on(RESIGN_ACCEPTED, ({ gameId, winner, reason }) => {
-      console.log("Resign accepted:", { gameId, winner, reason });
       if (gameId === gameIdRef.current) {
         setGameOver(true);
         setWinner(winner);
@@ -368,8 +337,6 @@ const Game = () => {
     });
 
     socket.on(DRAW_OFFER, ({ gameId, fromPlayer }) => {
-      console.log("Draw offer received:", { gameId, fromPlayer });
-      console.log("Draw offer received:", { gameId, fromPlayer });
       if (gameId === gameIdRef.current && fromPlayer !== color) {
         setCurrentDrawOffer({ gameId, fromPlayer });
         setShowDrawOfferModal(true);
@@ -377,7 +344,6 @@ const Game = () => {
     });
 
     socket.on(DRAW_ACCEPTED, ({ gameId }) => {
-      console.log("Draw accepted:", { gameId });
       if (gameId === gameIdRef.current) {
         setGameOver(true);
         setWinner(null);
@@ -387,9 +353,7 @@ const Game = () => {
     });
 
     socket.on(DRAW_DECLINED, ({ gameId }) => {
-      console.log("Draw declined:", { gameId });
       if (gameId === gameIdRef.current) {
-        console.log("Your opponent declined the draw offer");
       }
     });
 

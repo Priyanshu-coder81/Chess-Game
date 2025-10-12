@@ -36,7 +36,6 @@ export class GameStateManager {
   static async persistToMongoDB(gameId) {
     try {
       const gameState = await this.getGameState(gameId);
-      console.log(gameState);
       if (!gameState) {
         console.error("No game state found for persistence:", gameId);
         return;
@@ -84,21 +83,13 @@ export class GameStateManager {
         endedAt: new Date()
       };
 
-      console.log("Persisting game to MongoDB:", {
-        gameId,
-        status: gameState.status,
-        movesCount: formattedMoves.length
-      });
+
 
       await GameModel.create(gameData);
       await this.deleteGameState(gameId);
       
-      console.log("Game successfully persisted to MongoDB:", gameId);
     } catch (error) {
-      console.error("Error persisting game to MongoDB:", {
-        gameId,
-        error: error.message
-      });
+    
       throw error;
     }
   }
