@@ -1,4 +1,3 @@
-import Spinner from 'react-bootstrap/Spinner';
 const Button = ({ children, onClick, className = "" , connect }) => {
   return (
     <button
