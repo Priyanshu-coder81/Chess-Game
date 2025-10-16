@@ -71,12 +71,12 @@ const Game = () => {
   const [showDrawConfirmModal, setShowDrawConfirmModal] = useState(false);
 
   const handleNewGame = () => {
-    if (started && !gameOver) {
+ /*    if (started && !gameOver) {
       const confirmNewGame = window.confirm(
         "Starting a new game will resign the current game. Are you sure you want to continue?"
       );
       if (!confirmNewGame) return;
-    }
+    } */
     socket.emit(RESIGN, { gameId: gameIdRef.current });
     // Reset all game state
     setGameOver(false);
@@ -132,16 +132,8 @@ const Game = () => {
   };
 
   const handleGoHome = () => {
-    if (started && !gameOver) {
-      const confirmHome = window.confirm(
-        "Going home will resign the current game. Are you sure you want to continue?"
-      );
-      if (!confirmHome) return;
-
-      // If user confirms, emit resign event before going home
-      if (socket && gameIdRef.current) {
-        socket.emit(RESIGN, { gameId: gameIdRef.current });
-      }
+    if (socket && gameIdRef.current) {
+      socket.emit(RESIGN, { gameId: gameIdRef.current });
     }
 
     // Navigate to home
@@ -456,15 +448,14 @@ const Game = () => {
                 <Dashboard
                   color={color}
                   moveHistory={moveHistory}
-                  onPlay={() => {
-                    /* implement play logic if needed */
-                  }}
                   onNewGame={handleNewGame}
                   isPlaying={started && !gameOver}
                   canStartNewGame={gameOver}
                   onResign={handleResign}
                   onDraw={handleDraw}
                   onGoHome={handleGoHome}
+                  started={started}
+                  gameOver={gameOver}
                 />
               )}
             </div>

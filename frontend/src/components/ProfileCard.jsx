@@ -1,8 +1,8 @@
 export const ProfileCard = ({ time, started, connect, playersData }) => {
   // For a 20-second game, we only need to show seconds
   const formatTime = () => {
-    if (!started) return "00:20";
-    if (time === null || time === undefined) return "00:20"; // wait until first socket update
+    if (!started) return "05:00";
+    if (time === null || time === undefined) return "05:00"; // wait until first socket update
 
     const timeInSeconds = Math.max(0, Math.floor(time || 0));
     const mins = Math.floor(timeInSeconds / 60);

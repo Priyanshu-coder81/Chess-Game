@@ -6,8 +6,10 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import { GameManager } from "./GameManager.js";
 import connectDB from "./db/index.js";
+import { connectRedis } from "./db/redis.js";
 import userRoutes from "./routes/user.routes.js";
 import { verifyAccessToken } from "./utils/verifyAccessToken.js";
+import { accessSync } from "fs";
 
 dotenv.config({ path: "./.env" });
 
@@ -110,7 +112,8 @@ io.on("connection", async (socket) => {
 
 // Connect to database and start server
 connectDB()
-  .then(() => {
+  .then(async () => {
+    await connectRedis();
     server.listen(port, () => {
       console.log(`Server is running on port ${port}`);
     });

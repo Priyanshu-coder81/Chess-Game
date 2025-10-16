@@ -29,7 +29,7 @@ export class Game {
     this.playersColors.set(player2, "b");
 
     this.disconnectTimeouts = new Map();
-    this.maxTimePerPlayer = 120000; // 120 seconds
+    this.maxTimePerPlayer = 300000; // 300 sec || 5 min
     this.currentTurnStartTime = null; // Initialize as null
 
     // Ensure sockets are in the room

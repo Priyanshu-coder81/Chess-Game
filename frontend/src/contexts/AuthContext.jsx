@@ -40,23 +40,7 @@ const AuthProvider = ({ children }) => {
     }
   };
 
-  /*   const guestLogin = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const guestId = getOrCreateGuestSession();
-      setUser({ id: guestId, username: `Guest_${guestId.subtring(6, 12)}` });
-      setIsGuest(true);
-      localStorage.removeItem("token");
-      return { success: true, guestId };
-    } catch (error) {
-      onsole.error("Guest login failed:", error);
-      setError("Failed to start guest session.");
-      return { success: false, error: error.message };
-    } finally {
-      setLoading(false);
-    }
-  }; */
+ 
 
   const login = async (credentials) => {
     try {
@@ -100,10 +84,14 @@ const AuthProvider = ({ children }) => {
       await apiService.logout();
       setUser(null);
       setError(null);
+      setToken(null);
+      localStorage.removeItem("token"); 
     } catch (error) {
       console.error("Logout error:", error);
       // Even if logout fails, clear local state
       setUser(null);
+      setToken(null); // Clear the token state
+      localStorage.removeItem("token"); 
     }
   };
 

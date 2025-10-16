@@ -7,10 +7,10 @@ const Button = ({ children, onClick, className = "" , connect }) => {
       <div className='flex items-center gap-4 p-4'>
         <div className='w-12'>
          {!connect? (<img
-            src='https://www.chess.com/bundles/web/images/color-icons/playwhite.cea685ba.svg'
+            src="./play-white.svg"
             alt='Play Icon'
             className='w-full h-auto'
-          />) :  <img class="w-15 h-15 animate-spin invert" src="https://www.svgrepo.com/show/491270/loading-spinner.svg" alt="Loading icon" />}
+          />) :  <img class="w-15 h-15 animate-spin invert" src="./loading-spinner.svg" alt="Loading icon" />}
         </div>
         <div>
           <h2 className='text-2xl md:text-3xl font-bold pr-1'>{children}</h2>

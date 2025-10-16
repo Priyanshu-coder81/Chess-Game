@@ -4,18 +4,24 @@ import { LuAlarmClock } from "react-icons/lu";
 import { IoHomeOutline } from "react-icons/io5";
 import { useNavigate } from "react-router-dom";
 
+import { OverlayPanel } from 'primereact/overlaypanel';
+import { Button } from 'primereact/button';
+import { useRef } from "react";
+
 export const Dashboard = ({
   color,
   moveHistory,
-  onPlay,
   onNewGame,
   isPlaying,
-  canStartNewGame,
   onResign,
   onDraw,
   onGoHome,
+  started,
+  gameOver
 }) => {
   const navigate = useNavigate();
+  const op = useRef(null);
+  const op2 = useRef(null);
 
   // Ensure moveHistory is always an array
   const safeMoveHistory = moveHistory || [];
@@ -49,30 +55,46 @@ export const Dashboard = ({
   return (
     <div className='bg-zinc-700 w-full h-full p-4'>
       {/* Top Buttons */}
-      <div className='grid grid-cols-3 gap-2 text-white mb-4'>
-        <button
-          className={`hover:bg-zinc-800 w-full text-center font-bold text-2xl flex flex-col items-center justify-center p-2 transition-colors duration-200 ${
-            isPlaying ? "bg-lime-500 text-black" : "bg-zinc-800"
-          }`}
-          onClick={onPlay}
-        >
-          <RiTimerFlashLine className='text-xl' />
-          Play
-        </button>
+      <div className='grid grid-cols-2 gap-2 text-white mb-4'>
+
+        <div>
         <button
           className='hover:bg-zinc-800 w-full text-center font-bold text-xl flex flex-col items-center justify-center p-2 bg-zinc-800 transition-colors duration-200'
-          onClick={onNewGame}
+          onClick={(e) => op.current.toggle(e)}
         >
-          <BsPlusSquareFill className='text-lg' />
+          <BsPlusSquareFill className='text-sm' />
           New Game
         </button>
+        <OverlayPanel ref={op}>
+          <div className="flex flex-col gap-2">
+            <h2 className="font-bold ">Are you Sure? </h2>
+            <div className="grid grid-cols-2 gap-5 ">
+              <Button   unstyled type="button" label="Yes" onClick={onNewGame} className="bg-lime-400 hover:bg-lime-500 text-white text-lg px-3 py-1 rounded-xl shadow-md border-none" />  
+              <Button unstyled type="button" label="No" onClick={(e) => op.current.toggle(e)} 
+              className="bg-lime-400 hover:bg-lime-500 text-white text-lg px-3 py-1 rounded-xl shadow-md border-none" />  
+            </div>
+          </div>
+        </OverlayPanel>
+        </div>
+        <div>
         <button
           className='hover:bg-zinc-800 w-full text-center font-bold text-lg flex flex-col items-center justify-center p-2 bg-zinc-800 transition-colors duration-200'
-          onClick={handleGoHome}
+          onClick={(e) => op2.current.toggle(e)}
         >
           <IoHomeOutline className='text-lg' />
           Home
         </button>
+        <OverlayPanel ref={op2}>
+          <div className="flex flex-col gap-2">
+            <h2 className="font-bold ">Are you Sure? </h2>
+            <div className="grid grid-cols-2 gap-5 ">
+              <Button   unstyled type="button" label="Yes" onClick={handleGoHome} className="bg-lime-400 hover:bg-lime-500 text-white text-lg px-3 py-1 rounded-xl shadow-md border-none" />  
+              <Button unstyled type="button" label="No" onClick={(e) => op2.current.toggle(e)} 
+              className="bg-lime-400 hover:bg-lime-500 text-white text-lg px-3 py-1 rounded-xl shadow-md border-none" />  
+            </div>
+          </div>
+        </OverlayPanel>
+        </div>
       </div>
 
       {/* Resign and Draw Buttons */}

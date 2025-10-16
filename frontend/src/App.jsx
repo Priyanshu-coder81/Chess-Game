@@ -1,5 +1,9 @@
 import { useState } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { PrimeReactProvider } from "primereact/api";
+
+import "primereact/resources/themes/lara-light-cyan/theme.css";
+
 
 import "./App.css";
 import Landing from "./screens/Landing";
@@ -13,6 +17,7 @@ import { SocketProvider } from "./contexts/SocketContext";
 
 function App() {
   return (
+    <PrimeReactProvider>
     <GuestProvider>
       <AuthProvider>
         <SocketProvider>
@@ -30,6 +35,7 @@ function App() {
         </SocketProvider>
       </AuthProvider>
     </GuestProvider>
+    </PrimeReactProvider>
   );
 }
 
