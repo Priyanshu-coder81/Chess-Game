@@ -55,7 +55,7 @@ const AuthProvider = ({ children }) => {
 
       return response;
     } catch (error) {
-      setError(error.message);
+      setError(error.response?.data?.message || "Invalid username or Password");
       throw error;
     } finally {
       setLoading(false);
