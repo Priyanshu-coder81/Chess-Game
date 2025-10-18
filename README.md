@@ -13,12 +13,12 @@ A real-time online chess game built with modern web technologies. Players can lo
 - **Complete Game Flow**: From match start to game-over, everything works smoothly.
 - **Game History**: game state/data and moves are stored in REDIS while playing and at game end persisted to MONGODB.
 - Implement a **Recovery Mechanism** so players can reconnect after refresh or disconnection.
+- Add **Guest IDs** for quick play without signup.  
 
 ---
 
 ## 🚧 Work in Progress
 
-- Add **Guest IDs** for quick play without signup.  
 - User Dashboard.
 
 ---
@@ -59,4 +59,12 @@ AI opponent mode.
 
 Contributions, issues, and feature requests are welcome!
 Feel free to fork this repo and submit a pull request.
+
+
+## 👨‍💻 Author
+
+**Priyanshu Verma**
+
+- Portfolio: https://my-portfolio-beta-nine-27.vercel.app/
+- LinkedIn: https://www.linkedin.com/in/priyanshu-verma-a12ba829a/
 
